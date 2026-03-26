@@ -1,0 +1,61 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #1A3D5D;
+  --primary: #1A3D5D;
+  --accent: #E68A00;
+  --success: #28A745;
+  --error: #DC3545;
+  --surface: #ffffff;
+  --border: #E9ECEF;
+  --text-muted: #6C757D;
+}
+
+.dark {
+  --background: #0f172a;
+  --foreground: #f8fafc;
+  --primary: #334155;
+  --accent: #FF9F1A;
+  --surface: #1e293b;
+  --border: #334155;
+  --text-muted: #94a3b8;
+}
+
+@theme {
+  --color-primary: var(--primary);
+  --color-accent: var(--accent);
+  --color-success: var(--success);
+  --color-error: var(--error);
+  --color-surface: var(--surface);
+  --color-muted: var(--text-muted);
+}
+
+body {
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Glassmorphism utility */
+.glass {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.dark .glass {
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Custom Gradients */
+.bg-premium-gradient {
+  background: linear-gradient(135deg, var(--primary) 0%, #2c5375 100%);
+}
+
+.bg-accent-gradient {
+  background: linear-gradient(135deg, var(--accent) 0%, #ff9f1a 100%);
+}

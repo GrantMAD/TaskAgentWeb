@@ -1,0 +1,127 @@
+import { supabase } from './supabaseClient'
+import { notificationService } from './notificationService'
+import { sanitizeString, sanitizeObject } from '../utils/sanitization'
+
+export const userService = {
+    getUserProfile: async (userId) => {
+        const { data, error } = await supabase
+            .from('users')
+            .select('*')
+            .eq('id', userId)
+            .maybeSingle()
+        if (error) throw error
+        return data
+    },
+
+    updateUserProfile: async (userId, updates) => {
+        const sanitizedUpdates = sanitizeObject(updates, ['name', 'bio', 'phone', 'skills']);
+        const { data, error } = await supabase
+            .from('users')
+            .update(sanitizedUpdates)
+            .eq('id', userId)
+        if (error) throw error
+        return data
+    },
+
+    getUserReviews: async (userId) => {
+        const { data, error } = await supabase
+            .from('reviews')
+            .select('*, reviewer:users!reviewer_id(id, name, profile_image)')
+            .eq('reviewed_user_id', userId)
+            .order('created_at', { ascending: false })
+        if (error) throw error
+        return data
+    },
+
+    submitReview: async (reviewData) => {
+        const sanitizedData = {
+            ...reviewData,
+            comment: sanitizeString(reviewData.comment)
+        };
+        const { data, error } = await supabase
+            .from('reviews')
+            .insert([sanitizedData])
+            .select()
+        if (error) throw error
+
+        // Notify user about new review
+        await notificationService.createNotification(
+            reviewData.reviewed_user_id,
+            'New Review',
+            'You received a new rating!',
+            'REVIEW',
+            reviewData.task_id
+        )
+
+        return data[0]
+    },
+
+    updatePushToken: async (userId, token) => {
+        const { error } = await supabase
+            .from('users')
+            .update({ push_token: token })
+            .eq('id', userId);
+        if (error) throw error;
+    },
+
+    updateSearchRadius: async (userId, radius) => {
+        const { error } = await supabase
+            .from('users')
+            .update({ search_radius: radius })
+            .eq('id', userId);
+        if (error) throw error;
+    },
+
+    updateNotificationPreferences: async (userId, preferences) => {
+        const { error } = await supabase
+            .from('users')
+            .update(preferences)
+            .eq('id', userId);
+        if (error) throw error;
+    },
+
+    // Upload profile image to avatars bucket
+    uploadAvatar: async (userId, file) => {
+        try {
+            const ext = file.name.split('.').pop();
+            const fileName = `${Date.now()}.${ext}`;
+            const filePath = `${userId}/${fileName}`;
+
+            const { error: uploadError } = await supabase.storage
+                .from('avatars')
+                .upload(filePath, file, {
+                    contentType: file.type
+                });
+
+            if (uploadError) throw uploadError;
+
+            const { data } = supabase.storage
+                .from('avatars')
+                .getPublicUrl(filePath);
+
+            return data.publicUrl;
+        } catch (error) {
+            console.error('Error uploading avatar:', error);
+            throw error;
+        }
+    },
+    
+    // Account Deletion Orchestration
+    deleteUserAccount: async (userId) => {
+        try {
+            const { data: files } = await supabase.storage.from('avatars').list(userId);
+            if (files && files.length > 0) {
+                await supabase.storage.from('avatars').remove(files.map(f => `${userId}/${f.name}`));
+            }
+
+            const { error: rpcError } = await supabase.rpc('delete_user_account');
+
+            if (rpcError) throw rpcError;
+
+            return true;
+        } catch (error) {
+            console.error('Error in deleteUserAccount:', error);
+            throw error;
+        }
+    }
+}

@@ -1,14 +1,14 @@
 'use client'
 
-import React, { useEffect, useState, useMemo, useCallback } from 'react';
+import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-    Search, 
-    SlidersHorizontal, 
-    Heart, 
-    X, 
-    ChevronDown, 
+import {
+    Search,
+    SlidersHorizontal,
+    Heart,
+    X,
+    ChevronDown,
     Filter,
     Loader2,
     MapPin,
@@ -22,19 +22,28 @@ import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { TASK_CATEGORIES, CURRENCY_SYMBOL } from '../../utils/constants';
 
+const ITEMS_PER_PAGE = 12;
+
 export default function Feed() {
     const searchParams = useSearchParams();
     const router = useRouter();
     const { user, savedTaskIds } = useAuth();
     const { showToast } = useToast();
 
+    // Refs
+    const sentinelRef = useRef(null);
+
     // State
     const [allTasks, setAllTasks] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [fetchingMore, setFetchingMore] = useState(false);
+    const [page, setPage] = useState(0);
+    const [hasMore, setHasMore] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [showSavedOnly, setShowSavedOnly] = useState(false);
     const [isFilterOpen, setIsFilterOpen] = useState(false);
-    
+    const [activeTab, setActiveTab] = useState('all');
+
     // Filters
     const [selectedCategories, setSelectedCategories] = useState(
         searchParams.get('category') ? [searchParams.get('category')] : []
@@ -42,27 +51,65 @@ export default function Feed() {
     const [priceRange, setPriceRange] = useState({ min: '', max: '' });
     const [sortBy, setSortBy] = useState('newest');
 
-    const fetchTasks = useCallback(async () => {
-        setLoading(true);
+    const fetchTasks = useCallback(async (isLoadMore = false) => {
+        if (isLoadMore) {
+            setFetchingMore(true);
+        } else {
+            setLoading(true);
+            setPage(0);
+            setHasMore(true);
+        }
+
         try {
-            const data = await taskService.getNearbyTasks();
-            setAllTasks(data);
+            const currentPage = isLoadMore ? page + 1 : 0;
+            const offset = currentPage * ITEMS_PER_PAGE;
+            const data = await taskService.getNearbyTasks(ITEMS_PER_PAGE, offset);
+
+            if (isLoadMore) {
+                setAllTasks(prev => [...prev, ...data]);
+                setPage(currentPage);
+            } else {
+                setAllTasks(data);
+            }
+
+            if (data.length < ITEMS_PER_PAGE) {
+                setHasMore(false);
+            }
         } catch (error) {
             console.error('Error fetching tasks:', error);
             showToast('Failed to load tasks', 'error');
         } finally {
             setLoading(false);
+            setFetchingMore(false);
         }
-    }, [showToast]);
+    }, [page, showToast]);
+
+    // Initial Load & Filter Changes
+    useEffect(() => {
+        fetchTasks(false);
+    }, [searchQuery, selectedCategories, priceRange, sortBy, showSavedOnly, activeTab]);
+
+    // Infinite Scroll Observer
+    useEffect(() => {
+        const observer = new IntersectionObserver((entries) => {
+            if (entries[0].isIntersecting && hasMore && !loading && !fetchingMore) {
+                fetchTasks(true);
+            }
+        }, { threshold: 0.1 });
+
+        if (sentinelRef.current) {
+            observer.observe(sentinelRef.current);
+        }
+
+        return () => observer.disconnect();
+    }, [hasMore, loading, fetchingMore, fetchTasks]);
 
     useEffect(() => {
-        fetchTasks();
-
-        // Real-time subscription
+        // Real-time subscription - reset everything on change
         const channel = supabase
             .channel('public:tasks')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, () => {
-                fetchTasks();
+                fetchTasks(false);
             })
             .subscribe();
 
@@ -75,6 +122,11 @@ export default function Feed() {
     const filteredTasks = useMemo(() => {
         let result = [...allTasks];
 
+        // 0. Tab Filtering
+        if (activeTab === 'my_tasks' && user) {
+            result = result.filter(t => t.poster_id === user.id);
+        }
+
         // 1. Saved Only
         if (showSavedOnly) {
             result = result.filter(t => savedTaskIds.includes(t.id));
@@ -83,8 +135,8 @@ export default function Feed() {
         // 2. Keyword Search
         if (searchQuery) {
             const query = searchQuery.toLowerCase();
-            result = result.filter(t => 
-                t.title.toLowerCase().includes(query) || 
+            result = result.filter(t =>
+                t.title.toLowerCase().includes(query) ||
                 t.category?.toLowerCase().includes(query) ||
                 t.description?.toLowerCase().includes(query)
             );
@@ -112,12 +164,12 @@ export default function Feed() {
         });
 
         return result;
-    }, [allTasks, searchQuery, selectedCategories, priceRange, sortBy, showSavedOnly, savedTaskIds]);
+    }, [allTasks, searchQuery, selectedCategories, priceRange, sortBy, showSavedOnly, savedTaskIds, activeTab, user]);
 
     // Log Interactions
     useEffect(() => {
         if (!searchQuery && selectedCategories.length === 0) return;
-        
+
         const timer = setTimeout(() => {
             const category = selectedCategories.length > 0 ? selectedCategories[0] : 'All';
             interactionService.logSearch(user?.id, category, searchQuery, filteredTasks.length);
@@ -127,7 +179,7 @@ export default function Feed() {
     }, [searchQuery, selectedCategories, user?.id, filteredTasks.length]);
 
     const toggleCategory = (cat) => {
-        setSelectedCategories(prev => 
+        setSelectedCategories(prev =>
             prev.includes(cat) ? prev.filter(c => c !== cat) : [...prev, cat]
         );
     };
@@ -143,12 +195,43 @@ export default function Feed() {
     return (
         <div className="container mx-auto px-4 py-8">
             <header className="mb-10">
-                <h1 className="text-4xl font-black text-slate-900 dark:text-white mb-4">Marketplace</h1>
+                <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
+                    <div>
+                        <h1 className="text-4xl font-black text-slate-900 dark:text-white mb-2">Marketplace</h1>
+                        <p className="text-slate-500 dark:text-slate-400 font-medium">Find help or browse opportunities in your neighbourhood.</p>
+                    </div>
+
+                    {user && (
+                        <div className="flex p-1.5 bg-slate-100 dark:bg-slate-900 rounded-2xl w-fit">
+                            <button 
+                                onClick={() => setActiveTab('all')}
+                                className={`px-6 py-2.5 rounded-xl text-sm font-black transition-all ${
+                                    activeTab === 'all' 
+                                    ? 'bg-white dark:bg-slate-800 text-primary shadow-sm' 
+                                    : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+                                }`}
+                            >
+                                All Tasks
+                            </button>
+                            <button 
+                                onClick={() => setActiveTab('my_tasks')}
+                                className={`px-6 py-2.5 rounded-xl text-sm font-black transition-all ${
+                                    activeTab === 'my_tasks' 
+                                    ? 'bg-white dark:bg-slate-800 text-primary shadow-sm' 
+                                    : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+                                }`}
+                            >
+                                Your Tasks
+                            </button>
+                        </div>
+                    )}
+                </div>
+
                 <div className="flex flex-col md:flex-row gap-4">
                     {/* Search Bar */}
                     <div className="flex-grow relative group">
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-primary transition-colors" />
-                        <input 
+                        <input
                             type="text"
                             placeholder="Find your next task..."
                             value={searchQuery}
@@ -158,13 +241,12 @@ export default function Feed() {
                     </div>
                     {/* Filter Toggle */}
                     <div className="flex gap-2">
-                        <button 
+                        <button
                             onClick={() => setIsFilterOpen(!isFilterOpen)}
-                            className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-bold transition-all border-2 ${
-                                isFilterOpen || selectedCategories.length > 0 || priceRange.min || priceRange.max
-                                ? 'bg-primary text-white border-primary shadow-lg shadow-primary/20'
-                                : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border-slate-100 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-600 shadow-sm'
-                            }`}
+                            className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-bold transition-all border-2 ${isFilterOpen || selectedCategories.length > 0 || priceRange.min || priceRange.max
+                                    ? 'bg-primary text-white border-primary shadow-lg shadow-primary/20'
+                                    : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border-slate-100 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-600 shadow-sm'
+                                }`}
                         >
                             <SlidersHorizontal className="w-5 h-5" />
                             Filters
@@ -174,13 +256,12 @@ export default function Feed() {
                                 </span>
                             )}
                         </button>
-                        <button 
+                        <button
                             onClick={() => setShowSavedOnly(!showSavedOnly)}
-                            className={`p-3 rounded-2xl font-bold transition-all border-2 ${
-                                showSavedOnly
-                                ? 'bg-red-500 text-white border-red-500 shadow-lg shadow-red-500/20'
-                                : 'bg-white dark:bg-slate-900 text-slate-400 border-slate-100 dark:border-slate-800 hover:border-slate-300 shadow-sm'
-                            }`}
+                            className={`p-3 rounded-2xl font-bold transition-all border-2 ${showSavedOnly
+                                    ? 'bg-red-500 text-white border-red-500 shadow-lg shadow-red-500/20'
+                                    : 'bg-white dark:bg-slate-900 text-slate-400 border-slate-100 dark:border-slate-800 hover:border-slate-300 shadow-sm'
+                                }`}
                         >
                             <Heart className={`w-6 h-6 ${showSavedOnly ? 'fill-white' : ''}`} />
                         </button>
@@ -190,7 +271,7 @@ export default function Feed() {
 
             <AnimatePresence>
                 {isFilterOpen && (
-                    <motion.div 
+                    <motion.div
                         initial={{ height: 0, opacity: 0 }}
                         animate={{ height: 'auto', opacity: 1 }}
                         exit={{ height: 0, opacity: 0 }}
@@ -202,14 +283,13 @@ export default function Feed() {
                                 <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-widest mb-4">Categories</h3>
                                 <div className="flex flex-wrap gap-2">
                                     {TASK_CATEGORIES.map(cat => (
-                                        <button 
+                                        <button
                                             key={cat.value}
                                             onClick={() => toggleCategory(cat.value)}
-                                            className={`px-3 py-1.5 rounded-xl text-xs font-bold border-2 transition-all ${
-                                                selectedCategories.includes(cat.value)
-                                                ? 'bg-primary text-white border-primary'
-                                                : 'bg-white dark:bg-slate-800 text-slate-500 border-transparent hover:border-slate-200'
-                                            }`}
+                                            className={`px-3 py-1.5 rounded-xl text-xs font-bold border-2 transition-all ${selectedCategories.includes(cat.value)
+                                                    ? 'bg-primary text-white border-primary'
+                                                    : 'bg-white dark:bg-slate-800 text-slate-500 border-transparent hover:border-slate-200'
+                                                }`}
                                         >
                                             {cat.label}
                                         </button>
@@ -221,7 +301,7 @@ export default function Feed() {
                             <div>
                                 <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-widest mb-4">Price Range ({CURRENCY_SYMBOL})</h3>
                                 <div className="flex items-center gap-3">
-                                    <input 
+                                    <input
                                         type="number"
                                         placeholder="Min"
                                         value={priceRange.min}
@@ -229,7 +309,7 @@ export default function Feed() {
                                         className="w-full px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:border-primary"
                                     />
                                     <span className="text-slate-400">to</span>
-                                    <input 
+                                    <input
                                         type="number"
                                         placeholder="Max"
                                         value={priceRange.max}
@@ -242,7 +322,7 @@ export default function Feed() {
                             {/* Sorting */}
                             <div>
                                 <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-widest mb-4">Sort By</h3>
-                                <select 
+                                <select
                                     value={sortBy}
                                     onChange={(e) => setSortBy(e.target.value)}
                                     className="w-full px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none appearance-none focus:border-primary"
@@ -251,7 +331,7 @@ export default function Feed() {
                                     <option value="price_desc">Highest Price</option>
                                     <option value="price_asc">Lowest Price</option>
                                 </select>
-                                <button 
+                                <button
                                     onClick={clearFilters}
                                     className="mt-4 text-xs font-black text-accent uppercase tracking-wider hover:underline"
                                 >
@@ -270,35 +350,62 @@ export default function Feed() {
                     ))}
                 </div>
             ) : filteredTasks.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 pb-20">
-                    {filteredTasks.map(task => (
-                        <motion.div 
-                            key={task.id}
-                            initial={{ opacity: 0, scale: 0.95 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                        >
-                            <TaskCard 
-                                task={task} 
-                                onClick={() => router.push(`/tasks/${task.id}`)} 
-                            />
-                        </motion.div>
-                    ))}
+                <div className="pb-20">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-10">
+                        {filteredTasks.map(task => (
+                            <motion.div
+                                key={task.id}
+                                initial={{ opacity: 0, scale: 0.95 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                            >
+                                <TaskCard
+                                    task={task}
+                                    onClick={() => router.push(`/tasks/${task.id}`)}
+                                />
+                            </motion.div>
+                        ))}
+                    </div>
+
+                    {/* Infinite Scroll Sentinel & Loader */}
+                    <div ref={sentinelRef} className="py-10 flex justify-center">
+                        {fetchingMore && (
+                            <div className="flex flex-col items-center gap-2">
+                                <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                                <p className="text-sm font-bold text-slate-400">Loading more tasks...</p>
+                            </div>
+                        )}
+                        {!hasMore && allTasks.length > 0 && (
+                            <p className="text-slate-400 font-bold italic">You've reached the end of the marketplace!</p>
+                        )}
+                    </div>
                 </div>
             ) : (
                 <div className="py-24 text-center bg-slate-50 dark:bg-slate-900 rounded-[48px] border-2 border-dashed border-slate-200 dark:border-slate-800 mx-auto max-w-4xl">
                     <Ghost className="w-20 h-20 mx-auto text-slate-300 mb-6" />
-                    <h2 className="text-3xl font-black text-slate-800 dark:text-white mb-3">No tasks found</h2>
+                    <h2 className="text-3xl font-black text-slate-800 dark:text-white mb-3">
+                        {activeTab === 'my_tasks' ? "You haven't posted any tasks yet" : "No tasks found"}
+                    </h2>
                     <p className="text-slate-500 font-medium text-lg max-w-md mx-auto">
-                        Try adjusting your filters or search terms to find more opportunities in your neighbourhood.
+                        {activeTab === 'my_tasks' 
+                            ? "Need a hand with something? Post a task and get help from your neighbours!" 
+                            : "Try adjusting your filters or search terms to find more opportunities in your neighbourhood."}
                     </p>
-                    <button 
-                        onClick={clearFilters}
-                        className="mt-8 px-8 py-3 bg-primary text-white font-bold rounded-2xl shadow-lg hover:shadow-xl transition-all"
-                    >
-                        Clear Filters
-                    </button>
+                    {activeTab === 'my_tasks' ? (
+                        <button 
+                            onClick={() => router.push('/tasks/create')}
+                            className="mt-8 px-8 py-3 bg-primary text-white font-bold rounded-2xl shadow-lg hover:shadow-xl transition-all"
+                        >
+                            Post Your First Task
+                        </button>
+                    ) : (
+                        <button 
+                            onClick={clearFilters}
+                            className="mt-8 px-8 py-3 bg-primary text-white font-bold rounded-2xl shadow-lg hover:shadow-xl transition-all"
+                        >
+                            Clear Filters
+                        </button>
+                    )}
                 </div>
-            )}
-        </div>
+            )}        </div>
     );
 }

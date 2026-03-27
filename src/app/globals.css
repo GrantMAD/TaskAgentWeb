@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* Tailwind v4 Dark Mode Selector Strategy */
+@variant dark (&:where(.dark, .dark *));
+
 :root {
   --background: #ffffff;
   --foreground: #1A3D5D;
@@ -12,9 +15,10 @@
   --text-muted: #6C757D;
 }
 
+/* Redefine variables when the .dark class is present */
 .dark {
-  --background: #0f172a;
-  --foreground: #f8fafc;
+  --background: #0f172a !important;
+  --foreground: #f8fafc !important;
   --primary: #334155;
   --accent: #FF9F1A;
   --surface: #1e293b;
@@ -29,6 +33,13 @@
   --color-error: var(--error);
   --color-surface: var(--surface);
   --color-muted: var(--text-muted);
+}
+
+html, body {
+  background-color: var(--background) !important;
+  color: var(--foreground) !important;
+  transition: background-color 0.3s ease, color 0.3s ease;
+  min-height: 100%;
 }
 
 body {

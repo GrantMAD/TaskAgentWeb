@@ -1,14 +1,14 @@
 export const CURRENCY_SYMBOL = 'R';
 
 export const TASK_CATEGORIES = [
-    { label: 'Cleaning', value: 'Cleaning', icon: 'Sparkles' },
-    { label: 'Delivery', value: 'Delivery', icon: 'Truck' },
-    { label: 'Tech Help', value: 'Tech', icon: 'Laptop' },
-    { label: 'Moving', value: 'Moving', icon: 'Box' },
-    { label: 'Gardening', value: 'Gardening', icon: 'Leaf' },
-    { label: 'Handyman', value: 'Handyman', icon: 'Wrench' },
-    { label: 'Pet Care', value: 'Pets', icon: 'PawPrint' },
-    { label: 'Other', value: 'Other', icon: 'MoreHorizontal' },
+    { label: 'Cleaning', value: 'Cleaning', icon: '🧹' },
+    { label: 'Delivery', value: 'Delivery', icon: '🚚' },
+    { label: 'Tech Help', value: 'Tech', icon: '💻' },
+    { label: 'Moving', value: 'Moving', icon: '📦' },
+    { label: 'Gardening', value: 'Gardening', icon: '🌿' },
+    { label: 'Handyman', value: 'Handyman', icon: '🛠️' },
+    { label: 'Pet Care', value: 'Pets', icon: '🐾' },
+    { label: 'Other', value: 'Other', icon: '📍' },
 ];
 
 export const NEIGHBOURHOOD_TIPS = [

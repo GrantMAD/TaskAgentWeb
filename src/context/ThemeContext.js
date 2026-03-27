@@ -1,6 +1,7 @@
 'use client'
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { supabase } from '../services/supabaseClient';
 import { userService } from '../services/userService';
 import { useAuth } from './AuthContext';
 
@@ -27,19 +28,31 @@ export const ThemeProvider = ({ children }) => {
     }, [session]);
 
     useEffect(() => {
+        const root = document.documentElement;
+        const body = document.body;
+        
         if (isDarkMode) {
-            document.documentElement.classList.add('dark');
+            root.classList.add('dark');
+            body.classList.add('dark');
+            console.log('Dark mode applied to HTML and Body');
         } else {
-            document.documentElement.classList.remove('dark');
+            root.classList.remove('dark');
+            body.classList.remove('dark');
+            console.log('Dark mode removed from HTML and Body');
         }
     }, [isDarkMode]);
 
     const fetchThemePreference = async () => {
         if (session) {
             try {
-                const profile = await userService.getUserProfile(session.user.id);
-                if (profile && profile.dark_mode !== undefined) {
-                    setIsDarkMode(profile.dark_mode);
+                const { data, error } = await supabase
+                    .from('users')
+                    .select('dark_mode')
+                    .eq('id', session.user.id)
+                    .maybeSingle();
+                
+                if (data && data.dark_mode !== undefined) {
+                    setIsDarkMode(!!data.dark_mode);
                 }
             } catch (error) {
                 console.error('Error fetching theme preference:', error);

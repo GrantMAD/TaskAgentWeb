@@ -11,6 +11,7 @@ export default function TaskCard({ task, onClick }) {
     const { showToast } = useToast();
 
     const isSaved = savedTaskIds?.includes(task.id);
+    const isOwner = user?.id === task.poster_id;
 
     const handleToggleSave = async (e) => {
         e.stopPropagation();
@@ -32,10 +33,15 @@ export default function TaskCard({ task, onClick }) {
                     <h3 className="text-xl font-bold text-slate-900 dark:text-white group-hover:text-primary dark:group-hover:text-accent transition-colors truncate">
                         {task.title}
                     </h3>
-                    <div className="flex items-center gap-2 mt-1">
+                    <div className="flex items-center flex-wrap gap-2 mt-1">
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-primary/10 text-primary dark:bg-primary/20 dark:text-blue-300 uppercase tracking-wider">
                             {task.category}
                         </span>
+                        {isOwner && (
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-black bg-indigo-500 text-white uppercase tracking-tighter shadow-sm">
+                                YOUR TASK
+                            </span>
+                        )}
                         {task.parent_template_id && (
                             <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
                                 <Repeat className="w-3 h-3" />

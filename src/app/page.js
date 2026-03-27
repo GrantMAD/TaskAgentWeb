@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { 
     Search, 
@@ -19,12 +20,20 @@ import TaskCard from '../components/TaskCard';
 import UserAvatar from '../components/UserAvatar';
 import { TASK_CATEGORIES, NEIGHBOURHOOD_TIPS } from '../utils/constants';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 
 export default function Home() {
     const { user } = useAuth();
+    const router = useRouter();
+    const { showToast } = useToast();
     const [nearbyTasks, setNearbyTasks] = useState([]);
     const [topNeighbours, setTopNeighbours] = useState([]);
     const [loading, setLoading] = useState(true);
+
+    const handleGuestAction = (action) => {
+        showToast(`Please sign up to ${action}`, 'info');
+        router.push('/register');
+    };
 
     useEffect(() => {
         const fetchData = async () => {
@@ -96,7 +105,7 @@ export default function Home() {
                             </p>
                             
                             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                                {user && (
+                                {user ? (
                                     <>
                                         <Link 
                                             href="/feed"
@@ -110,6 +119,22 @@ export default function Home() {
                                             className="w-full sm:w-auto px-8 py-4 bg-white dark:bg-slate-900 text-primary dark:text-white border-2 border-slate-200 dark:border-slate-800 rounded-2xl font-black text-lg shadow-sm hover:border-primary transition-all flex items-center justify-center gap-2"
                                         >
                                             Post a Task
+                                        </Link>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Link 
+                                            href="/register"
+                                            className="w-full sm:w-auto px-8 py-4 bg-premium-gradient text-white rounded-2xl font-black text-lg shadow-xl hover:shadow-2xl hover:scale-105 transition-all flex items-center justify-center gap-2"
+                                        >
+                                            Sign Up Free
+                                            <ArrowRight className="w-5 h-5" />
+                                        </Link>
+                                        <Link 
+                                            href="/login"
+                                            className="w-full sm:w-auto px-8 py-4 bg-white dark:bg-slate-900 text-primary dark:text-white border-2 border-slate-200 dark:border-slate-800 rounded-2xl font-black text-lg shadow-sm hover:border-primary transition-all flex items-center justify-center gap-2"
+                                        >
+                                            Sign In
                                         </Link>
                                     </>
                                 )}
@@ -134,20 +159,21 @@ export default function Home() {
                                     className="group p-4 bg-white dark:bg-slate-800 rounded-3xl border border-slate-100 dark:border-slate-700 shadow-sm hover:shadow-xl hover:scale-105 transition-all flex flex-col items-center justify-center gap-3"
                                 >
                                     <div className="w-12 h-12 rounded-2xl bg-slate-50 dark:bg-slate-700 flex items-center justify-center group-hover:bg-primary/10 transition-colors">
-                                        <span className="text-2xl group-hover:scale-110 transition-transform">{idx % 2 === 0 ? '🛠️' : '🧹'}</span>
+                                        <span className="text-2xl group-hover:scale-110 transition-transform">{cat.icon}</span>
                                     </div>
                                     <span className="text-sm font-bold text-slate-700 dark:text-slate-300">{cat.label}</span>
                                 </Link>
                             ) : (
-                                <div 
+                                <button 
                                     key={cat.value}
-                                    className="group p-4 bg-white dark:bg-slate-800 rounded-3xl border border-slate-100 dark:border-slate-700 shadow-sm flex flex-col items-center justify-center gap-3 opacity-80"
+                                    onClick={() => handleGuestAction('browse tasks by category')}
+                                    className="group p-4 bg-white dark:bg-slate-800 rounded-3xl border border-slate-100 dark:border-slate-700 shadow-sm hover:shadow-xl hover:scale-105 transition-all flex flex-col items-center justify-center gap-3 opacity-80"
                                 >
                                     <div className="w-12 h-12 rounded-2xl bg-slate-50 dark:bg-slate-700 flex items-center justify-center">
-                                        <span className="text-2xl">{idx % 2 === 0 ? '🛠️' : '🧹'}</span>
+                                        <span className="text-2xl">{cat.icon}</span>
                                     </div>
                                     <span className="text-sm font-bold text-slate-700 dark:text-slate-300">{cat.label}</span>
-                                </div>
+                                </button>
                             )
                         ))}
                     </div>
@@ -187,13 +213,20 @@ export default function Home() {
                                             <span className="text-sm font-black text-slate-900 dark:text-white">{neighbour.rating?.toFixed(1) || '5.0'}</span>
                                             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">({neighbour.completed_tasks} tasks)</span>
                                         </div>
-                                        {user && (
+                                        {user ? (
                                             <Link 
                                                 href={`/profile/${neighbour.id}`}
                                                 className="px-6 py-3 bg-slate-50 dark:bg-slate-800 rounded-2xl text-[10px] font-black text-primary uppercase tracking-widest hover:bg-primary hover:text-white transition-all inline-block"
                                             >
                                                 View Profile
                                             </Link>
+                                        ) : (
+                                            <button 
+                                                onClick={() => handleGuestAction('view profiles')}
+                                                className="px-6 py-3 bg-slate-50 dark:bg-slate-800 rounded-2xl text-[10px] font-black text-primary uppercase tracking-widest hover:bg-primary hover:text-white transition-all inline-block"
+                                            >
+                                                View Profile
+                                            </button>
                                         )}
                                     </div>
                                 </motion.div>
@@ -235,7 +268,11 @@ export default function Home() {
                     ) : nearbyTasks.length > 0 ? (
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                             {nearbyTasks.map(task => (
-                                <TaskCard key={task.id} task={task} onClick={() => {}} />
+                                <TaskCard 
+                                    key={task.id} 
+                                    task={task} 
+                                    onClick={() => user ? router.push(`/tasks/${task.id}`) : handleGuestAction('view task details')} 
+                                />
                             ))}
                         </div>
                     ) : (

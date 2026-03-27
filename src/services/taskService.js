@@ -72,12 +72,13 @@ export const taskService = {
         return newTask;
     },
 
-    getNearbyTasks: async () => {
+    getNearbyTasks: async (limit = 100, offset = 0) => {
         const { data, error } = await supabase
             .from('tasks')
             .select('*, poster:users!poster_id(id, name, profile_image, rating)')
             .eq('status', 'OPEN')
             .order('created_at', { ascending: false })
+            .range(offset, offset + limit - 1)
         if (error) throw error
         return data
     },

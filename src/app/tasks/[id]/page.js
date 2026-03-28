@@ -20,7 +20,8 @@ import {
     Image as ImageIcon,
     X,
     Loader2,
-    Star
+    Star,
+    PartyPopper
 } from 'lucide-react';
 import { taskService } from '../../../services/taskService';
 import { messageService } from '../../../services/messageService';
@@ -31,6 +32,7 @@ import { useToast } from '../../../context/ToastContext';
 import { CURRENCY_SYMBOL } from '../../../utils/constants';
 import { formatDistanceToNow } from 'date-fns';
 import ReportModal from '../../../components/ReportModal';
+import ConfirmationModal from '../../../components/ConfirmationModal';
 
 export default function TaskDetail() {
     const { id: taskId } = useParams();
@@ -48,6 +50,15 @@ export default function TaskDetail() {
     const [showApplyModal, setShowApplyModal] = useState(false);
     const [applyMessage, setApplyMessage] = useState('');
     const [showReportModal, setShowReportModal] = useState(false);
+    const [confirmationConfig, setConfirmationConfig] = useState({
+        isOpen: false,
+        title: '',
+        message: '',
+        confirmText: '',
+        type: 'primary',
+        onConfirm: () => {},
+    });
+    const [showSuccessBanner, setShowSuccessBanner] = useState(false);
 
     const fetchTaskDetails = useCallback(async () => {
         try {
@@ -107,68 +118,131 @@ export default function TaskDetail() {
             await taskService.applyForTask(taskId, user.id, applyMessage);
             showToast('Application submitted successfully!', 'success');
             setShowApplyModal(false);
+            setShowSuccessBanner(true);
             fetchTaskDetails();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         } catch (error) {
             showToast(error.message, 'error');
         } finally {
             setActionLoading(false);
         }
+    };
+
+    const triggerConfirmation = (config) => {
+        setConfirmationConfig({
+            ...config,
+            isOpen: true,
+        });
     };
 
     const handleHire = async (workerId) => {
-        if (!confirm('Are you sure you want to hire this neighbour?')) return;
-        setActionLoading(true);
-        try {
-            await taskService.assignWorker(taskId, workerId);
-            showToast('Neighbour hired successfully!', 'success');
-            fetchTaskDetails();
-        } catch (error) {
-            showToast(error.message, 'error');
-        } finally {
-            setActionLoading(false);
-        }
+        triggerConfirmation({
+            title: 'Hire Neighbour?',
+            message: 'Are you sure you want to hire this neighbour? Other applicants will be notified.',
+            confirmText: 'Hire Neighbour',
+            type: 'primary',
+            onConfirm: async () => {
+                setActionLoading(true);
+                try {
+                    await taskService.assignWorker(taskId, workerId);
+                    showToast('Neighbour hired successfully!', 'success');
+                    fetchTaskDetails();
+                    setConfirmationConfig(prev => ({ ...prev, isOpen: false }));
+                } catch (error) {
+                    showToast(error.message, 'error');
+                } finally {
+                    setActionLoading(false);
+                }
+            }
+        });
     };
 
     const handleMarkComplete = async () => {
-        if (!confirm('Have you finished the work? This will notify the poster.')) return;
-        setActionLoading(true);
-        try {
-            await taskService.markTaskComplete(taskId);
-            showToast('Work submitted for approval!', 'success');
-            fetchTaskDetails();
-        } catch (error) {
-            showToast(error.message, 'error');
-        } finally {
-            setActionLoading(false);
-        }
+        triggerConfirmation({
+            title: 'Submit Work?',
+            message: 'Have you finished the work? This will notify the poster to review and release payment.',
+            confirmText: 'Submit Work',
+            type: 'success',
+            onConfirm: async () => {
+                setActionLoading(true);
+                try {
+                    await taskService.markTaskComplete(taskId);
+                    showToast('Work submitted for approval!', 'success');
+                    fetchTaskDetails();
+                    setConfirmationConfig(prev => ({ ...prev, isOpen: false }));
+                } catch (error) {
+                    showToast(error.message, 'error');
+                } finally {
+                    setActionLoading(false);
+                }
+            }
+        });
     };
 
     const handleApprove = async () => {
-        if (!confirm('Approve completion and release payment?')) return;
-        setActionLoading(true);
-        try {
-            await taskService.confirmCompletion(taskId);
-            showToast('Task completed successfully!', 'success');
-            fetchTaskDetails();
-        } catch (error) {
-            showToast(error.message, 'error');
-        } finally {
-            setActionLoading(false);
-        }
+        triggerConfirmation({
+            title: 'Approve & Release Payment?',
+            message: 'Has the work been completed to your satisfaction? This will officially close the task.',
+            confirmText: 'Approve & Close',
+            type: 'success',
+            onConfirm: async () => {
+                setActionLoading(true);
+                try {
+                    await taskService.confirmCompletion(taskId);
+                    showToast('Task completed successfully!', 'success');
+                    fetchTaskDetails();
+                    setConfirmationConfig(prev => ({ ...prev, isOpen: false }));
+                } catch (error) {
+                    showToast(error.message, 'error');
+                } finally {
+                    setActionLoading(false);
+                }
+            }
+        });
     };
 
     const handleCancel = async () => {
-        if (!confirm('Are you sure you want to cancel this task?')) return;
-        setActionLoading(true);
-        try {
-            await taskService.cancelTask(taskId);
-            showToast('Task cancelled', 'info');
-            router.push('/feed');
-        } catch (error) {
-            showToast(error.message, 'error');
-        } finally {
-            setActionLoading(false);
-        }
+        triggerConfirmation({
+            title: 'Cancel Task?',
+            message: 'Are you sure you want to cancel this task? Any current applicants will be notified.',
+            confirmText: 'Yes, Cancel Task',
+            type: 'danger',
+            onConfirm: async () => {
+                setActionLoading(true);
+                try {
+                    await taskService.cancelTask(taskId);
+                    showToast('Task cancelled', 'info');
+                    router.push('/feed');
+                } catch (error) {
+                    showToast(error.message, 'error');
+                } finally {
+                    setActionLoading(false);
+                }
+            }
+        });
+    };
+
+    const handleCancelApplication = async () => {
+        triggerConfirmation({
+            title: 'Withdraw Application?',
+            message: 'Are you sure you want to withdraw your application for this task? The poster will be notified.',
+            confirmText: 'Withdraw Application',
+            type: 'danger',
+            onConfirm: async () => {
+                setActionLoading(true);
+                try {
+                    await taskService.cancelApplication(taskId, user.id);
+                    showToast('Application withdrawn', 'info');
+                    setShowSuccessBanner(false);
+                    fetchTaskDetails();
+                    setConfirmationConfig(prev => ({ ...prev, isOpen: false }));
+                } catch (error) {
+                    showToast(error.message, 'error');
+                } finally {
+                    setActionLoading(false);
+                }
+            }
+        });
     };
 
     const handleMessage = async (recipientId) => {
@@ -219,6 +293,43 @@ export default function TaskDetail() {
                 <ChevronLeft className="w-5 h-5" />
                 Back to Feed
             </button>
+
+            {/* Success Banner */}
+            <AnimatePresence>
+                {showSuccessBanner && (
+                    <motion.div 
+                        initial={{ opacity: 0, y: -20, height: 0 }}
+                        animate={{ opacity: 1, y: 0, height: 'auto' }}
+                        exit={{ opacity: 0, y: -20, height: 0 }}
+                        className="mb-8 p-8 bg-emerald-500 rounded-[32px] text-white flex flex-col md:flex-row items-center gap-6 shadow-xl shadow-emerald-500/20 relative overflow-hidden"
+                    >
+                        {/* Decorative background circle */}
+                        <div className="absolute top-[-50%] right-[-10%] w-64 h-64 bg-white/10 rounded-full blur-3xl pointer-events-none" />
+                        
+                        <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center shrink-0">
+                            <PartyPopper className="w-8 h-8 text-white" />
+                        </div>
+                        <div className="flex-1 text-center md:text-left">
+                            <h2 className="text-2xl font-black mb-1">Application Sent!</h2>
+                            <p className="font-bold opacity-90">Your neighbour has been notified. Check your messages for updates.</p>
+                        </div>
+                        <div className="flex gap-3">
+                            <button 
+                                onClick={() => router.push('/feed')}
+                                className="px-6 py-3 bg-white/20 hover:bg-white/30 rounded-2xl font-black transition-colors"
+                            >
+                                Browse More
+                            </button>
+                            <button 
+                                onClick={() => setShowSuccessBanner(false)}
+                                className="p-3 hover:bg-white/20 rounded-2xl transition-colors"
+                            >
+                                <X className="w-6 h-6" />
+                            </button>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
                 {/* Left Column: Details */}
@@ -372,9 +483,18 @@ export default function TaskDetail() {
                             )}
 
                             {task.status === 'OPEN' && hasApplied && (
-                                <div className="w-full py-5 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded-[24px] font-black text-center flex items-center justify-center gap-2 border border-emerald-100 dark:border-emerald-800">
-                                    <CheckCircle2 className="w-6 h-6" />
-                                    Applied Successfully
+                                <div className="space-y-4">
+                                    <div className="w-full py-5 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded-[24px] font-black text-center flex items-center justify-center gap-2 border border-emerald-100 dark:border-emerald-800">
+                                        <CheckCircle2 className="w-6 h-6" />
+                                        Applied Successfully
+                                    </div>
+                                    <button 
+                                        onClick={handleCancelApplication}
+                                        className="w-full py-2 group flex items-center justify-center gap-2 text-slate-400 hover:text-red-500 transition-all font-bold text-sm"
+                                    >
+                                        <X className="w-4 h-4" />
+                                        Withdraw Application
+                                    </button>
                                 </div>
                             )}
 
@@ -516,6 +636,17 @@ export default function TaskDetail() {
                 targetId={taskId}
                 targetType="task"
                 targetName={task.title}
+            />
+
+            <ConfirmationModal 
+                isOpen={confirmationConfig.isOpen}
+                title={confirmationConfig.title}
+                message={confirmationConfig.message}
+                confirmText={confirmationConfig.confirmText}
+                type={confirmationConfig.type}
+                loading={actionLoading}
+                onConfirm={confirmationConfig.onConfirm}
+                onCancel={() => setConfirmationConfig(prev => ({ ...prev, isOpen: false }))}
             />
         </div>
     );

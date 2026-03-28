@@ -27,6 +27,7 @@ export default function Home() {
     const router = useRouter();
     const { showToast } = useToast();
     const [nearbyTasks, setNearbyTasks] = useState([]);
+    const [appliedTasks, setAppliedTasks] = useState([]);
     const [topNeighbours, setTopNeighbours] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -38,12 +39,22 @@ export default function Home() {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const [tasksData, repData] = await Promise.all([
+                const promises = [
                     taskService.getNearbyTasks(),
                     adminService.getReputationAnalytics()
-                ]);
+                ];
+
+                if (user?.id) {
+                    promises.push(taskService.getAppliedTasks(user.id));
+                }
+
+                const [tasksData, repData, appliedData] = await Promise.all(promises);
+                
                 setNearbyTasks(tasksData.slice(0, 3));
                 setTopNeighbours(repData.superstars.slice(0, 4));
+                if (appliedData) {
+                    setAppliedTasks(appliedData.slice(0, 3));
+                }
             } catch (error) {
                 console.error('Error fetching landing page data:', error);
             } finally {
@@ -51,7 +62,7 @@ export default function Home() {
             }
         };
         fetchData();
-    }, []);
+    }, [user?.id]);
 
     const features = [
         {
@@ -239,6 +250,33 @@ export default function Home() {
                     </div>
                 </div>
             </section>
+
+            {/* Applied Tasks (Only for logged in users with applications) */}
+            {user && appliedTasks.length > 0 && (
+                <section className="py-24 bg-white dark:bg-slate-950 border-y border-slate-100 dark:border-slate-800">
+                    <div className="container mx-auto px-4 md:px-6">
+                        <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6">
+                            <div className="max-w-xl">
+                                <h2 className="text-4xl font-black mb-4 flex items-center gap-3">
+                                    <Zap className="w-8 h-8 text-accent" />
+                                    Your Applications
+                                </h2>
+                                <p className="text-slate-500 dark:text-slate-400 text-lg">You've expressed interest in these tasks. Waiting for the poster to review.</p>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                            {appliedTasks.map(task => (
+                                <TaskCard 
+                                    key={task.id} 
+                                    task={task} 
+                                    onClick={() => router.push(`/tasks/${task.id}`)} 
+                                />
+                            ))}
+                        </div>
+                    </div>
+                </section>
+            )}
 
             {/* Nearby Tasks Showcase */}
             <section className="py-24">

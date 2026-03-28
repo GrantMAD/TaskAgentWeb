@@ -60,6 +60,20 @@ export default function TaskDetail() {
     });
     const [showSuccessBanner, setShowSuccessBanner] = useState(false);
 
+    const formatRelativeTime = (dateString) => {
+        if (!dateString) return 'recently';
+        // Ensure date string is treated as UTC if it doesn't specify a timezone
+        const utcDateString = (dateString.includes('T') && !dateString.endsWith('Z') && !dateString.includes('+')) 
+            ? `${dateString}Z` 
+            : dateString;
+        const date = new Date(utcDateString);
+        const now = new Date();
+        const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+        
+        if (diffInSeconds < 60) return 'just now';
+        return formatDistanceToNow(date) + ' ago';
+    };
+
     const fetchTaskDetails = useCallback(async () => {
         try {
             const data = await taskService.getTaskDetails(taskId);
@@ -352,7 +366,7 @@ export default function TaskDetail() {
                         <div className="flex flex-wrap gap-6 text-slate-500 dark:text-slate-400 font-bold mb-8">
                             <div className="flex items-center gap-2">
                                 <Clock className="w-5 h-5 text-accent" />
-                                Posted {formatDistanceToNow(new Date(task.created_at))} ago
+                                Posted {formatRelativeTime(task.created_at)}
                             </div>
                             <div className="flex items-center gap-2">
                                 <MapPin className="w-5 h-5 text-accent" />
@@ -418,7 +432,7 @@ export default function TaskDetail() {
                                                     <p className="font-black text-slate-900 dark:text-white">{app.worker?.name}</p>
                                                     <div className="flex items-center gap-2 mt-0.5">
                                                         <span className="text-xs font-bold text-amber-500">★ {app.worker?.rating?.toFixed(1) || 'NEW'}</span>
-                                                        <span className="text-xs text-slate-400">• applied {formatDistanceToNow(new Date(app.created_at))} ago</span>
+                                                        <span className="text-xs text-slate-400">• applied {formatRelativeTime(app.created_at)}</span>
                                                     </div>
                                                 </div>
                                             </div>

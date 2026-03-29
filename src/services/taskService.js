@@ -32,7 +32,7 @@ export const taskService = {
     createTask: async (taskData) => {
         const isLimitReached = await rateLimitService.checkTaskLimit(taskData.poster_id);
         if (isLimitReached) {
-            const error = new Error('Task limit reached');
+            const error = new Error('You have reached the limit of 5 active tasks. Please complete or cancel an existing task before posting a new one.');
             error.code = 'TASK_LIMIT_EXCEEDED';
             throw error;
         }
@@ -72,6 +72,22 @@ export const taskService = {
         }
 
         return newTask;
+    },
+
+    updateTask: async (taskId, taskData) => {
+        // Sanitize inputs
+        const sanitizedData = {
+            ...sanitizeObject(taskData, ['title', 'description', 'address'])
+        };
+
+        const { data, error } = await supabase
+            .from('tasks')
+            .update(sanitizedData)
+            .eq('id', taskId)
+            .select();
+
+        if (error) throw error;
+        return data[0];
     },
 
     getNearbyTasks: async (limit = 100, offset = 0) => {
@@ -202,7 +218,7 @@ export const taskService = {
     applyForTask: async (taskId, workerId, message) => {
         const isRateLimited = await rateLimitService.checkRateLimit('task_applications', 'worker_id', workerId, 60);
         if (isRateLimited) {
-            const error = new Error('Rate limit exceeded');
+            const error = new Error('Slow down! You can only apply for one task per minute. Please wait a moment before trying again.');
             error.code = 'RATE_LIMIT_EXCEEDED';
             throw error;
         }

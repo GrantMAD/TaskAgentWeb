@@ -21,7 +21,8 @@ import {
     X,
     Loader2,
     Star,
-    PartyPopper
+    PartyPopper,
+    PencilLine
 } from 'lucide-react';
 import { taskService } from '../../../services/taskService';
 import { messageService } from '../../../services/messageService';
@@ -510,6 +511,16 @@ export default function TaskDetail() {
                                         Withdraw Application
                                     </button>
                                 </div>
+                            )}
+
+                            {isPoster && task.status === 'OPEN' && (
+                                <Link 
+                                    href={`/tasks/${task.id}/edit`}
+                                    className="w-full py-4 px-6 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-2xl font-black text-center transition-all flex items-center justify-center gap-2 mb-3"
+                                >
+                                    <PencilLine className="w-5 h-5" />
+                                    Edit Task
+                                </Link>
                             )}
 
                             {isPoster && task.status === 'OPEN' && (

@@ -69,9 +69,12 @@ export const NotificationProvider = ({ children }) => {
         }
     }, []);
 
+    const [onlineUsers, setOnlineUsers] = useState({});
+
     useEffect(() => {
         let notifSub;
         let msgSub;
+        let presenceSub;
 
         if (session) {
             const userId = session.user.id;
@@ -83,6 +86,43 @@ export const NotificationProvider = ({ children }) => {
                 setUnreadCount(prev => prev + 1);
                 showToast(`New ${newNotif.title}`, 'info');
             });
+
+            // Presence tracking
+            presenceSub = supabase.channel('online-users', {
+                config: {
+                    presence: {
+                        key: userId,
+                    },
+                },
+            });
+
+            presenceSub
+                .on('presence', { event: 'sync' }, () => {
+                    const state = presenceSub.presenceState();
+                    const online = {};
+                    Object.keys(state).forEach((key) => {
+                        online[key] = true;
+                    });
+                    setOnlineUsers(online);
+                })
+                .on('presence', { event: 'join' }, ({ key, newPresences }) => {
+                    setOnlineUsers(prev => ({ ...prev, [key]: true }));
+                })
+                .on('presence', { event: 'leave' }, ({ key, leftPresences }) => {
+                    setOnlineUsers(prev => {
+                        const newOnline = { ...prev };
+                        delete newOnline[key];
+                        return newOnline;
+                    });
+                })
+                .subscribe(async (status) => {
+                    if (status === 'SUBSCRIBED') {
+                        await presenceSub.track({
+                            user_id: userId,
+                            online_at: new Date().toISOString(),
+                        });
+                    }
+                });
 
             // Subscribe to messages for badge updates
             msgSub = supabase
@@ -99,11 +139,13 @@ export const NotificationProvider = ({ children }) => {
             setNotifications([]);
             setUnreadCount(0);
             setUnreadMessagesCount(0);
+            setOnlineUsers({});
         }
 
         return () => {
             if (notifSub) notifSub.unsubscribe();
             if (msgSub) supabase.removeChannel(msgSub);
+            if (presenceSub) supabase.removeChannel(presenceSub);
         };
     }, [session, fetchCounts, fetchNotifications, showToast]);
 
@@ -169,6 +211,7 @@ export const NotificationProvider = ({ children }) => {
             notifications, 
             unreadCount, 
             unreadMessagesCount,
+            onlineUsers,
             loading, 
             markAsRead, 
             markAllAsRead, 

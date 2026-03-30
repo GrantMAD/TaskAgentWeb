@@ -102,20 +102,6 @@ export const messageService = {
         
         if (error) throw error
 
-        if (otherId) {
-            const notificationBody = text 
-                ? (text.substring(0, 30) + (text.length > 30 ? '...' : ''))
-                : 'Sent an image 📷';
-
-            await notificationService.createNotification(
-                otherId,
-                'New Message',
-                notificationBody,
-                'MESSAGE',
-                conversationId
-            )
-        }
-
         return data
     },
 
@@ -151,6 +137,19 @@ export const messageService = {
             .eq('is_read', false);
         
         if (error) throw error;
+    },
+
+    deleteMessage: async (messageId) => {
+        const { error } = await supabase
+            .from('messages')
+            .update({ 
+                message_text: '[DELETED]',
+                image_url: null 
+            })
+            .eq('id', messageId);
+        
+        if (error) throw error;
+        return true;
     },
 
     uploadChatImage: async (userId, file) => {

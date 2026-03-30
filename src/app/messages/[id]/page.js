@@ -19,12 +19,16 @@ import { messageService } from '../../../services/messageService';
 import { supabase } from '../../../services/supabaseClient';
 import { useAuth } from '../../../context/AuthContext';
 import { useToast } from '../../../context/ToastContext';
+import { useNotifications } from '../../../context/NotificationContext';
 import MessageBubble from '../../../components/MessageBubble';
+import ReportModal from '../../../components/ReportModal';
+import ConfirmationModal from '../../../components/ConfirmationModal';
 
 export default function Chat() {
     const { id: conversationId } = useParams();
     const { user } = useAuth();
     const { showToast } = useToast();
+    const { onlineUsers } = useNotifications();
     const router = useRouter();
 
     const [messages, setMessages] = useState([]);
@@ -40,6 +44,13 @@ export default function Chat() {
     const [selectedImage, setSelectedImage] = useState(null);
     const [imagePreview, setImagePreview] = useState(null);
     
+    // Reporting & Deletion State
+    const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+    const [reportedMessage, setReportedMessage] = useState(null);
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [messageToDelete, setMessageToDelete] = useState(null);
+    const [isDeleting, setIsDeleting] = useState(false);
+
     const scrollRef = useRef(null);
     const typingTimeoutRef = useRef(null);
     const channelRef = useRef(null);
@@ -99,6 +110,8 @@ export default function Chat() {
                     setMessages(prev => prev.map(msg => 
                         msg.id === payload.new.id ? { ...msg, ...payload.new } : msg
                     ));
+                } else if (payload.eventType === 'DELETE') {
+                    setMessages(prev => prev.filter(msg => msg.id !== payload.old.id));
                 }
             })
             .on('broadcast', { event: 'typing' }, (payload) => {
@@ -187,12 +200,53 @@ export default function Chat() {
             
             const real = await messageService.sendMessage(conversationId, user.id, messageText, uploadedUrl);
             
-            setMessages(prev => prev.map(msg => 
-                msg.id === tempId ? { ...real, status: 'sent' } : msg
-            ));
+            setMessages(prev => {
+                // If real-time listener already added this message (check by id),
+                // we should remove our optimistic placeholder instead of updating it
+                // to avoid duplicate keys and duplicate messages.
+                const exists = prev.find(m => m.id === real.id);
+                if (exists) {
+                    return prev.filter(m => m.id !== tempId);
+                }
+                return prev.map(msg => 
+                    msg.id === tempId ? { ...real, status: 'sent' } : msg
+                );
+            });
         } catch (error) {
             showToast('Failed to send message', 'error');
             setMessages(prev => prev.filter(msg => msg.id !== tempId));
+        }
+    };
+
+    const onDeleteMessage = (messageId) => {
+        setMessageToDelete(messageId);
+        setIsDeleteModalOpen(true);
+    };
+
+    const onReportMessage = (message) => {
+        setReportedMessage(message);
+        setIsReportModalOpen(true);
+    };
+
+    const confirmDelete = async () => {
+        if (!messageToDelete || isDeleting) return;
+        setIsDeleting(true);
+        try {
+            await messageService.deleteMessage(messageToDelete);
+            // Real-time will handle state update via the UPDATE event, 
+            // but we can also do it optimistically for better performance
+            setMessages(prev => prev.map(m => 
+                m.id === messageToDelete 
+                ? { ...m, message_text: '[DELETED]', image_url: null } 
+                : m
+            ));
+            showToast('Message deleted', 'success');
+            setIsDeleteModalOpen(false);
+        } catch (error) {
+            showToast('Failed to delete message', 'error');
+        } finally {
+            setIsDeleting(false);
+            setMessageToDelete(null);
         }
     };
 
@@ -217,7 +271,7 @@ export default function Chat() {
                         <ArrowLeft className="w-6 h-6" />
                     </button>
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-slate-100 overflow-hidden">
+                        <div className="w-10 h-10 rounded-xl bg-slate-100 overflow-hidden relative">
                             {otherUser?.profile_image ? (
                                 <img src={otherUser.profile_image} className="w-full h-full object-cover" />
                             ) : (
@@ -225,10 +279,19 @@ export default function Chat() {
                                     {otherUser?.name?.charAt(0)}
                                 </div>
                             )}
+                            {onlineUsers[otherUser?.id] && (
+                                <div className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 rounded-full border-2 border-white dark:border-slate-900 shadow-sm" />
+                            )}
                         </div>
                         <div>
                             <h2 className="font-black text-slate-900 dark:text-white leading-tight">{otherUser?.name || 'Deleted User'}</h2>
-                            <p className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">Active Neighbour</p>
+                            {isOtherTyping ? (
+                                <p className="text-[10px] font-black text-primary animate-pulse uppercase tracking-widest">Typing...</p>
+                            ) : onlineUsers[otherUser?.id] ? (
+                                <p className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">Online Now</p>
+                            ) : (
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Offline</p>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -254,6 +317,8 @@ export default function Chat() {
                         key={msg.id} 
                         message={msg} 
                         isMine={msg.sender_id === user?.id} 
+                        onDelete={onDeleteMessage}
+                        onReport={onReportMessage}
                     />
                 ))}
                 
@@ -333,6 +398,24 @@ export default function Chat() {
                     <p className="text-[9px] font-black text-slate-300 uppercase tracking-[0.2em]">Press Enter to send</p>
                 </div>
             </div>
+
+            <ReportModal 
+                isOpen={isReportModalOpen}
+                onClose={() => setIsReportModalOpen(false)}
+                reportedUserId={reportedMessage?.sender_id}
+                details={`Message content: "${reportedMessage?.message_text?.substring(0, 100)}${reportedMessage?.message_text?.length > 100 ? '...' : ''}"`}
+            />
+
+            <ConfirmationModal 
+                isOpen={isDeleteModalOpen}
+                onClose={() => setIsDeleteModalOpen(false)}
+                onConfirm={confirmDelete}
+                title="Delete Message?"
+                message="Are you sure you want to delete this message? This action cannot be undone."
+                confirmText="Delete"
+                variant="danger"
+                isLoading={isDeleting}
+            />
         </div>
     );
 }

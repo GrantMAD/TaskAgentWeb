@@ -16,10 +16,12 @@ import { messageService } from '../../services/messageService';
 import { supabase } from '../../services/supabaseClient';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
+import { useNotifications } from '../../context/NotificationContext';
 
 export default function Messages() {
     const { user } = useAuth();
     const { showToast } = useToast();
+    const { onlineUsers } = useNotifications();
     const router = useRouter();
 
     const [conversations, setConversations] = useState([]);
@@ -30,25 +32,7 @@ export default function Messages() {
         if (!user) return;
         try {
             const data = await messageService.getConversations(user.id);
-            
-            // Fetch unread counts
-            const { data: unreadData } = await supabase
-                .from('messages')
-                .select('conversation_id')
-                .eq('is_read', false)
-                .neq('sender_id', user.id);
-
-            const unreadMap = (unreadData || []).reduce((acc, msg) => {
-                acc[msg.conversation_id] = (acc[msg.conversation_id] || 0) + 1;
-                return acc;
-            }, {});
-
-            const processed = data.map(conv => ({
-                ...conv,
-                unread_count: unreadMap[conv.id] || 0
-            }));
-
-            setConversations(processed);
+            setConversations(data);
         } catch (error) {
             console.error('Error:', error);
             showToast('Failed to load conversations', 'error');
@@ -166,6 +150,9 @@ export default function Messages() {
                                             </div>
                                         )}
                                     </div>
+                                    {onlineUsers[otherUser?.id] && (
+                                        <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 rounded-full border-[3px] border-white dark:border-slate-900 shadow-sm" />
+                                    )}
                                     {hasUnread && (
                                         <div className="absolute -top-1 -right-1 w-5 h-5 bg-primary text-white text-[10px] font-black rounded-full flex items-center justify-center border-4 border-white dark:border-slate-900 shadow-lg">
                                             {conv.unread_count}

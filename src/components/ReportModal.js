@@ -2,12 +2,12 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, AlertTriangle, ShieldAlert, Loader2, Flag } from 'lucide-react';
-import { supabase } from '../services/supabaseClient';
+import { Flag, ShieldAlert, X, AlertTriangle, Loader2 } from 'lucide-react';
+import { reportService } from '../services/reportService';
 import { useToast } from '../context/ToastContext';
 import { useAuth } from '../context/AuthContext';
 
-export default function ReportModal({ isOpen, onClose, targetId, targetType = 'user', targetName = '' }) {
+export default function ReportModal({ isOpen, onClose, reportedUserId, reportedTaskId, type = 'user' }) {
     const [reason, setReason] = useState('');
     const [details, setDetails] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -32,17 +32,13 @@ export default function ReportModal({ isOpen, onClose, targetId, targetType = 'u
 
         setIsSubmitting(true);
         try {
-            const { error } = await supabase
-                .from('reports')
-                .insert([{
-                    reporter_id: user.id,
-                    target_id: targetId,
-                    target_type: targetType,
-                    reason,
-                    details
-                }]);
-
-            if (error) throw error;
+            await reportService.submitReport({
+                reporter_id: user.id,
+                reported_user_id: reportedUserId || null,
+                reported_task_id: reportedTaskId || null,
+                reason,
+                details
+            });
 
             showToast('Report submitted. We will review it shortly.', 'success');
             setReason('');

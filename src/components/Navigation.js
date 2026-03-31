@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { 
     Home, 
     Search, 
@@ -26,6 +26,7 @@ import { supabase } from '../services/supabaseClient';
 
 export default function Navigation() {
     const pathname = usePathname();
+    const router = useRouter();
     const { user, userProfile } = useAuth();
     const { notifications, unreadCount, unreadMessagesCount, markAsRead, markAllAsRead } = useNotifications();
     const { isDarkMode, toggleTheme } = useTheme();
@@ -63,6 +64,7 @@ export default function Navigation() {
         const { error } = await supabase.auth.signOut();
         if (!error) {
             showToast('Logged out successfully. See you soon!', 'success');
+            router.push('/');
         } else {
             showToast('Error logging out. Please try again.', 'error');
         }

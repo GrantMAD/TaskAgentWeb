@@ -16,6 +16,7 @@ import {
     Calendar,
     Briefcase
 } from 'lucide-react';
+import { formatDistanceToNow } from 'date-fns';
 import { userService } from '../../../services/userService';
 import { messageService } from '../../../services/messageService';
 import { reliabilityService } from '../../../services/reliabilityService';
@@ -37,6 +38,7 @@ export default function PublicProfile() {
     const [reliability, setReliability] = useState(null);
     const [loading, setLoading] = useState(true);
     const [reportModalOpen, setReportModalOpen] = useState(false);
+    const [showAllReviews, setShowAllReviews] = useState(false);
 
     useEffect(() => {
         if (userId) {
@@ -246,49 +248,60 @@ export default function PublicProfile() {
 
                         <div className="space-y-4">
                             {reviews.length > 0 ? (
-                                reviews.map((review, i) => (
-                                    <motion.div 
-                                        key={review.id}
-                                        initial={{ opacity: 0, x: 20 }}
-                                        animate={{ opacity: 1, x: 0 }}
-                                        transition={{ delay: i * 0.1 }}
-                                        className="bg-white dark:bg-slate-900 rounded-[32px] p-8 border border-slate-100 dark:border-slate-800 shadow-sm relative overflow-hidden group"
-                                    >
-                                        <div className="flex items-start justify-between mb-4">
-                                            <div className="flex items-center gap-4">
-                                                <div 
-                                                    className="cursor-pointer"
-                                                    onClick={() => router.push(`/profile/${review.reviewer.id}`)}
-                                                >
-                                                    <UserAvatar user={review.reviewer} size={48} />
-                                                </div>
-                                                <div>
-                                                    <h5 
-                                                        className="font-black text-slate-900 dark:text-white hover:text-primary transition-colors cursor-pointer"
+                                <>
+                                    {(showAllReviews ? reviews : reviews.slice(0, 3)).map((review, i) => (
+                                        <motion.div 
+                                            key={review.id}
+                                            initial={{ opacity: 0, x: 20 }}
+                                            animate={{ opacity: 1, x: 0 }}
+                                            transition={{ delay: i * 0.1 }}
+                                            className="bg-white dark:bg-slate-900 rounded-[32px] p-8 border border-slate-100 dark:border-slate-800 shadow-sm relative overflow-hidden group"
+                                        >
+                                            <div className="flex items-start justify-between mb-4">
+                                                <div className="flex items-center gap-4">
+                                                    <div 
+                                                        className="cursor-pointer"
                                                         onClick={() => router.push(`/profile/${review.reviewer.id}`)}
                                                     >
-                                                        {review.reviewer.name}
-                                                    </h5>
-                                                    <div className="flex mt-1">
-                                                        {[1, 2, 3, 4, 5].map((s) => (
-                                                            <Star 
-                                                                key={s} 
-                                                                className={`w-3.5 h-3.5 ${s <= review.rating ? "text-accent fill-accent" : "text-slate-200 dark:text-slate-800"}`} 
-                                                            />
-                                                        ))}
+                                                        <UserAvatar user={review.reviewer} size={48} />
+                                                    </div>
+                                                    <div>
+                                                        <h5 
+                                                            className="font-black text-slate-900 dark:text-white hover:text-primary transition-colors cursor-pointer"
+                                                            onClick={() => router.push(`/profile/${review.reviewer.id}`)}
+                                                        >
+                                                            {review.reviewer.name}
+                                                        </h5>
+                                                        <div className="flex mt-1">
+                                                            {[1, 2, 3, 4, 5].map((s) => (
+                                                                <Star 
+                                                                    key={s} 
+                                                                    className={`w-3.5 h-3.5 ${s <= review.rating ? "text-accent fill-accent" : "text-slate-200 dark:text-slate-800"}`} 
+                                                                />
+                                                            ))}
+                                                        </div>
                                                     </div>
                                                 </div>
+                                                <div className="text-[10px] font-black text-slate-300 uppercase tracking-widest flex items-center gap-1.5">
+                                                    <Clock className="w-3 h-3" />
+                                                    {formatDistanceToNow(new Date(review.created_at), { addSuffix: true })}
+                                                </div>
                                             </div>
-                                            <div className="text-[10px] font-black text-slate-300 uppercase tracking-widest flex items-center gap-1.5">
-                                                <Clock className="w-3 h-3" />
-                                                {new Date(review.created_at).toLocaleDateString()}
-                                            </div>
-                                        </div>
-                                        <p className="text-slate-600 dark:text-slate-300 font-bold leading-relaxed line-clamp-3">
-                                            {review.comment}
-                                        </p>
-                                    </motion.div>
-                                ))
+                                            <p className="text-slate-600 dark:text-slate-300 font-bold leading-relaxed line-clamp-3">
+                                                {review.comment}
+                                            </p>
+                                        </motion.div>
+                                    ))}
+
+                                    {reviews.length > 3 && (
+                                        <button 
+                                            onClick={() => setShowAllReviews(!showAllReviews)}
+                                            className="w-full py-4 mt-2 text-xs font-black text-primary uppercase tracking-[0.2em] bg-primary/5 hover:bg-primary/10 rounded-2xl transition-all border border-primary/5"
+                                        >
+                                            {showAllReviews ? 'Show Less' : `View all ${reviews.length} Neighbourhood Reviews`}
+                                        </button>
+                                    )}
+                                </>
                             ) : (
                                 <div className="py-20 text-center bg-slate-50/50 dark:bg-slate-900/40 rounded-[48px] border-2 border-dashed border-slate-100 dark:border-slate-800">
                                     <Briefcase className="w-12 h-12 text-slate-200 mx-auto mb-4" />

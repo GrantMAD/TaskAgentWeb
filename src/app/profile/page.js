@@ -15,8 +15,11 @@ import {
     Phone,
     UserCircle,
     Loader2,
-    Shield
+    Shield,
+    Clock,
+    ArrowRight
 } from 'lucide-react';
+import { formatDistanceToNow } from 'date-fns';
 import { userService } from '../../services/userService';
 import { reliabilityService } from '../../services/reliabilityService';
 import { useAuth } from '../../context/AuthContext';
@@ -35,6 +38,8 @@ export default function Profile() {
     const [reviews, setReviews] = useState([]);
     const [history, setHistory] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [showAllReviews, setShowAllReviews] = useState(false);
+    const [showAllHistory, setShowAllHistory] = useState(false);
 
     const fetchProfileData = useCallback(async () => {
         if (!user) return;
@@ -213,24 +218,41 @@ export default function Profile() {
                         <h2 className="text-sm font-black text-slate-400 uppercase tracking-widest mb-6 px-1">Recent Reviews</h2>
                         <div className="space-y-6">
                             {reviews.length > 0 ? (
-                                reviews.map(rev => (
-                                    <div key={rev.id} className="space-y-3">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center font-bold text-xs">
-                                                {rev.reviewer?.name?.charAt(0)}
-                                            </div>
-                                            <div>
-                                                <p className="text-xs font-black text-slate-900 dark:text-white">{rev.reviewer?.name}</p>
-                                                <div className="flex gap-0.5">
-                                                    {[...Array(5)].map((_, i) => (
-                                                        <Star key={i} className={`w-2.5 h-2.5 ${i < rev.rating ? 'fill-amber-400 text-amber-400' : 'text-slate-200'}`} />
-                                                    ))}
+                                <>
+                                    {(showAllReviews ? reviews : reviews.slice(0, 3)).map(rev => (
+                                        <div key={rev.id} className="space-y-3 animate-in fade-in duration-300">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center font-bold text-xs">
+                                                    {rev.reviewer?.name?.charAt(0)}
+                                                </div>
+                                                <div>
+                                                    <div className="flex items-center gap-2">
+                                                        <p className="text-xs font-black text-slate-900 dark:text-white">{rev.reviewer?.name}</p>
+                                                        <div className="flex items-center gap-1 text-[10px] font-black text-slate-300 uppercase tracking-widest">
+                                                            <Clock className="w-2.5 h-2.5" />
+                                                            {formatDistanceToNow(new Date(rev.created_at), { addSuffix: true })}
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex gap-0.5 mt-0.5">
+                                                        {[...Array(5)].map((_, i) => (
+                                                            <Star key={i} className={`w-2.5 h-2.5 ${i < rev.rating ? 'fill-amber-400 text-amber-400' : 'text-slate-200'}`} />
+                                                        ))}
+                                                    </div>
                                                 </div>
                                             </div>
+                                            <p className="text-xs font-medium text-slate-500 italic px-1 line-clamp-3">"{rev.comment}"</p>
                                         </div>
-                                        <p className="text-xs font-medium text-slate-500 italic px-1 line-clamp-3">"{rev.comment}"</p>
-                                    </div>
-                                ))
+                                    ))}
+                                    
+                                    {reviews.length > 3 && (
+                                        <button 
+                                            onClick={() => setShowAllReviews(!showAllReviews)}
+                                            className="w-full py-2 mt-4 text-[10px] font-black text-primary uppercase tracking-widest border border-primary/10 rounded-xl hover:bg-primary/5 transition-colors"
+                                        >
+                                            {showAllReviews ? 'Show Less' : `View ${reviews.length - 3} More Reviews`}
+                                        </button>
+                                    )}
+                                </>
                             ) : (
                                 <p className="text-xs font-bold text-slate-400 text-center py-8 italic">No reviews yet.</p>
                             )}
@@ -240,10 +262,20 @@ export default function Profile() {
 
                 {/* Task History - Full Width */}
                 <section className="lg:col-span-3">
-                    <h2 className="text-2xl font-black text-slate-900 dark:text-white mb-6 px-4">Work History</h2>
+                    <div className="flex items-center justify-between mb-6 px-4">
+                        <h2 className="text-2xl font-black text-slate-900 dark:text-white">Work History</h2>
+                        {history.length > 4 && (
+                            <button 
+                                onClick={() => setShowAllHistory(!showAllHistory)}
+                                className="text-[10px] font-black text-primary uppercase tracking-[0.2em] px-4 py-2 bg-primary/5 hover:bg-primary/10 rounded-xl transition-all"
+                            >
+                                {showAllHistory ? 'Show Less' : `View All (${history.length})`}
+                            </button>
+                        )}
+                    </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                         {history.length > 0 ? (
-                            history.map(task => (
+                            (showAllHistory ? history : history.slice(0, 4)).map(task => (
                                 <TaskCard key={task.id} task={task} />
                             ))
                         ) : (
@@ -256,24 +288,4 @@ export default function Profile() {
             </main>
         </div>
     );
-}
-
-function ArrowRight(props) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M5 12h14" />
-      <path d="m12 5 7 7-7 7" />
-    </svg>
-  )
 }

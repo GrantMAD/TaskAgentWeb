@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
     MapPin, 
@@ -389,16 +390,16 @@ export default function TaskDetail() {
                             {task.image_url && (
                                 <div className="space-y-4">
                                     <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-widest">Initial Photo</h3>
-                                    <div className="rounded-[32px] overflow-hidden border-4 border-white dark:border-slate-800 shadow-xl">
-                                        <img src={task.image_url} alt="Task" className="w-full h-64 object-cover" />
+                                    <div className="relative w-full h-64 rounded-[32px] overflow-hidden border-4 border-white dark:border-slate-800 shadow-xl">
+                                        <Image src={task.image_url} alt="Task Media" fill sizes="(max-width: 768px) 100vw, 50vw" className="object-cover" />
                                     </div>
                                 </div>
                             )}
                             {task.completion_image_url && (
                                 <div className="space-y-4">
                                     <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-widest">Completion Proof</h3>
-                                    <div className="rounded-[32px] overflow-hidden border-4 border-emerald-500/20 shadow-xl">
-                                        <img src={task.completion_image_url} alt="Completion" className="w-full h-64 object-cover" />
+                                    <div className="relative w-full h-64 rounded-[32px] overflow-hidden border-4 border-emerald-500/20 shadow-xl">
+                                        <Image src={task.completion_image_url} alt="Completion Proof" fill sizes="(max-width: 768px) 100vw, 50vw" className="object-cover" />
                                     </div>
                                 </div>
                             )}
@@ -420,9 +421,9 @@ export default function TaskDetail() {
                                     applications.map(app => (
                                         <div key={app.id} className="p-6 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-3xl shadow-sm hover:shadow-md transition-shadow flex items-center justify-between gap-4">
                                             <div className="flex items-center gap-4">
-                                                <div className="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                                                <div className="relative w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-800 overflow-hidden shrink-0">
                                                     {app.worker?.profile_image ? (
-                                                        <img src={app.worker.profile_image} className="w-full h-full object-cover" />
+                                                        <Image src={app.worker.profile_image} alt={`${app.worker.name}'s avatar`} fill sizes="48px" className="object-cover" />
                                                     ) : (
                                                         <div className="w-full h-full flex items-center justify-center font-bold text-slate-400">
                                                             {app.worker?.name?.charAt(0)}
@@ -589,9 +590,9 @@ export default function TaskDetail() {
                     <div className="p-8 bg-slate-50 dark:bg-slate-900 rounded-[32px] border border-slate-100 dark:border-slate-800">
                         <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest mb-6">Posted By</h3>
                         <div className="flex items-center gap-4">
-                            <div className="w-16 h-16 rounded-[24px] bg-premium-gradient overflow-hidden ring-4 ring-white dark:ring-slate-800 shadow-lg">
+                            <div className="relative w-16 h-16 rounded-[24px] bg-premium-gradient overflow-hidden ring-4 ring-white dark:ring-slate-800 shadow-lg shrink-0">
                                 {task.poster?.profile_image ? (
-                                    <img src={task.poster.profile_image} className="w-full h-full object-cover" />
+                                    <Image src={task.poster.profile_image} alt={`${task.poster.name}'s avatar`} fill sizes="64px" className="object-cover" />
                                 ) : (
                                     <div className="w-full h-full flex items-center justify-center text-2xl text-white font-black">
                                         {task.poster?.name?.charAt(0)}

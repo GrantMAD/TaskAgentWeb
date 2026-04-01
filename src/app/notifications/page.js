@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
     Bell, 
@@ -21,7 +22,7 @@ import {
 import { useNotifications } from '../../context/NotificationContext';
 import { useToast } from '../../context/ToastContext';
 import { taskService } from '../../services/taskService';
-import { userService } from '../../services/userService';
+import { profileService } from '../../services/profileService';
 import { supabase } from '../../services/supabaseClient';
 
 export default function Notifications() {
@@ -97,7 +98,7 @@ export default function Notifications() {
 
             let previousWorker = null;
             if (lastTasks && lastTasks.length > 0) {
-                previousWorker = await userService.getUserProfile(lastTasks[0].assigned_worker_id);
+                previousWorker = await profileService.getUserProfile(lastTasks[0].assigned_worker_id);
             }
 
             setModalData({
@@ -325,7 +326,9 @@ export default function Notifications() {
                                                 >
                                                     <div className="w-14 h-14 rounded-2xl bg-white dark:bg-slate-800 p-0.5 shadow-sm">
                                                         {modalData.previousWorker.profile_image ? (
-                                                            <img src={modalData.previousWorker.profile_image} className="w-full h-full object-cover rounded-[14px]" />
+                                                            <div className="relative w-full h-full rounded-[14px] overflow-hidden">
+                                                                <Image src={modalData.previousWorker.profile_image} alt={`${modalData.previousWorker.name}'s avatar`} fill sizes="56px" className="object-cover" />
+                                                            </div>
                                                         ) : (
                                                             <div className="w-full h-full flex items-center justify-center text-lg font-black text-accent uppercase">{modalData.previousWorker.name.charAt(0)}</div>
                                                         )}

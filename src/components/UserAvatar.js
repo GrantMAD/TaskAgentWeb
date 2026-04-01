@@ -1,6 +1,7 @@
 'use client'
 
 import React from 'react';
+import Image from 'next/image';
 
 export default function UserAvatar({ user, size = 40, className = "" }) {
     if (!user) return <div className="bg-slate-200 rounded-full animate-pulse" style={{ width: size, height: size }} />;
@@ -14,10 +15,12 @@ export default function UserAvatar({ user, size = 40, className = "" }) {
                 className={`shrink-0 overflow-hidden relative group ${className}`} 
                 style={{ width: size, height: size, borderRadius: size / 2.5 }}
             >
-                <img 
+                <Image 
                     src={profile_image} 
-                    alt={name} 
-                    className="w-full h-full object-cover transition-transform group-hover:scale-110" 
+                    alt={name ? `${name}'s profile photo` : 'User profile photo'} 
+                    fill
+                    sizes={`${size}px`}
+                    className="object-cover transition-transform group-hover:scale-110" 
                 />
             </div>
         );

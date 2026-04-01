@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { 
     Settings, 
@@ -20,7 +21,8 @@ import {
     ArrowRight
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
-import { userService } from '../../services/userService';
+import { profileService } from '../../services/profileService';
+import { reviewService } from '../../services/reviewService';
 import { reliabilityService } from '../../services/reliabilityService';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
@@ -45,9 +47,9 @@ export default function Profile() {
         if (!user) return;
         try {
             const [p, r, rev, hist] = await Promise.all([
-                userService.getUserProfile(user.id),
+                profileService.getUserProfile(user.id),
                 reliabilityService.getUserReliability(user.id),
-                userService.getUserReviews(user.id),
+                reviewService.getUserReviews(user.id),
                 taskService.getTaskHistory(user.id)
             ]);
             setProfile(p);
@@ -101,7 +103,7 @@ export default function Profile() {
                     <div className="relative group mb-8">
                         <div className="w-32 h-32 rounded-[40px] bg-white p-1 shadow-2xl overflow-hidden group-hover:scale-105 transition-transform duration-500">
                             {profile.profile_image ? (
-                                <img src={profile.profile_image} className="w-full h-full object-cover rounded-[38px]" />
+                                <Image src={profile.profile_image} alt={`${profile.name}'s profile photo`} fill sizes="128px" className="object-cover rounded-[38px]" />
                             ) : (
                                 <div className="w-full h-full bg-slate-100 flex items-center justify-center text-4xl font-black text-primary">
                                     {profile.name?.charAt(0)}

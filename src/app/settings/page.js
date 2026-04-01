@@ -22,6 +22,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { useToast } from '../../context/ToastContext';
 import { userService } from '../../services/userService';
+import { profileService } from '../../services/profileService';
 import ConfirmationModal from '../../components/ConfirmationModal';
 
 export default function Settings() {
@@ -50,7 +51,7 @@ export default function Settings() {
         if (!user) return;
         setUpdating(true);
         try {
-            await userService.updateNotificationPreferences(user.id, { [key]: value });
+            await profileService.updateNotificationPreferences(user.id, { [key]: value });
             await refreshProfile();
             showToast('Preferences updated', 'success');
         } catch (error) {
@@ -64,7 +65,7 @@ export default function Settings() {
         if (!user) return;
         setUpdating(true);
         try {
-            await userService.updateSearchRadius(user.id, value);
+            await profileService.updateSearchRadius(user.id, value);
             await refreshProfile();
             showToast(`Search radius set to ${value === 99999 ? 'all' : value + 'km'}`, 'success');
         } catch (error) {

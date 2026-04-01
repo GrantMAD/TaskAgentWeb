@@ -49,9 +49,9 @@ export default function Feed() {
     useEffect(() => {
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
-                (pos) => setUserLocation({ 
-                    lat: pos.coords.latitude, 
-                    lng: pos.coords.longitude 
+                (pos) => setUserLocation({
+                    lat: pos.coords.latitude,
+                    lng: pos.coords.longitude
                 }),
                 (err) => console.warn('Location blocked or unavailable:', err)
             );
@@ -78,10 +78,10 @@ export default function Feed() {
             const currentPage = isLoadMore ? page + 1 : 0;
             const offset = currentPage * ITEMS_PER_PAGE;
             const data = await taskService.getNearbyTasks(
-                user?.id, 
-                userLocation?.lat, 
-                userLocation?.lng, 
-                ITEMS_PER_PAGE, 
+                user?.id,
+                userLocation?.lat,
+                userLocation?.lng,
+                ITEMS_PER_PAGE,
                 offset
             );
 
@@ -126,8 +126,9 @@ export default function Feed() {
 
     useEffect(() => {
         // Real-time subscription - reset everything on change
+        const channelName = `public:tasks:${user?.id || 'guest'}-${Date.now()}`;
         const channel = supabase
-            .channel('public:tasks')
+            .channel(channelName)
             .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, () => {
                 fetchTasks(false);
             })
@@ -136,7 +137,7 @@ export default function Feed() {
         return () => {
             supabase.removeChannel(channel);
         };
-    }, [fetchTasks]);
+    }, [fetchTasks, user]);
 
     // Derived: Filtered and Sorted Tasks
     const filteredTasks = useMemo(() => {
@@ -225,23 +226,21 @@ export default function Feed() {
 
                     {user && (
                         <div className="flex p-1.5 bg-slate-100 dark:bg-slate-900 rounded-2xl w-fit">
-                            <button 
+                            <button
                                 onClick={() => setActiveTab('all')}
-                                className={`px-6 py-2.5 rounded-xl text-sm font-black transition-all ${
-                                    activeTab === 'all' 
-                                    ? 'bg-white dark:bg-slate-800 text-primary shadow-sm' 
-                                    : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
-                                }`}
+                                className={`px-6 py-2.5 rounded-xl text-sm font-black transition-all ${activeTab === 'all'
+                                        ? 'bg-white dark:bg-slate-800 text-primary shadow-sm'
+                                        : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+                                    }`}
                             >
                                 All Tasks
                             </button>
-                            <button 
+                            <button
                                 onClick={() => setActiveTab('my_tasks')}
-                                className={`px-6 py-2.5 rounded-xl text-sm font-black transition-all ${
-                                    activeTab === 'my_tasks' 
-                                    ? 'bg-white dark:bg-slate-800 text-primary shadow-sm' 
-                                    : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
-                                }`}
+                                className={`px-6 py-2.5 rounded-xl text-sm font-black transition-all ${activeTab === 'my_tasks'
+                                        ? 'bg-white dark:bg-slate-800 text-primary shadow-sm'
+                                        : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+                                    }`}
                             >
                                 Your Tasks
                             </button>
@@ -266,8 +265,8 @@ export default function Feed() {
                         <button
                             onClick={() => setIsFilterOpen(!isFilterOpen)}
                             className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-bold transition-all border-2 ${isFilterOpen || selectedCategories.length > 0 || priceRange.min || priceRange.max
-                                    ? 'bg-primary text-white border-primary shadow-lg shadow-primary/20'
-                                    : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border-slate-100 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-600 shadow-sm'
+                                ? 'bg-primary text-white border-primary shadow-lg shadow-primary/20'
+                                : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border-slate-100 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-600 shadow-sm'
                                 }`}
                         >
                             <SlidersHorizontal className="w-5 h-5" />
@@ -281,8 +280,8 @@ export default function Feed() {
                         <button
                             onClick={() => setShowSavedOnly(!showSavedOnly)}
                             className={`p-3 rounded-2xl font-bold transition-all border-2 ${showSavedOnly
-                                    ? 'bg-red-500 text-white border-red-500 shadow-lg shadow-red-500/20'
-                                    : 'bg-white dark:bg-slate-900 text-slate-400 border-slate-100 dark:border-slate-800 hover:border-slate-300 shadow-sm'
+                                ? 'bg-red-500 text-white border-red-500 shadow-lg shadow-red-500/20'
+                                : 'bg-white dark:bg-slate-900 text-slate-400 border-slate-100 dark:border-slate-800 hover:border-slate-300 shadow-sm'
                                 }`}
                         >
                             <Heart className={`w-6 h-6 ${showSavedOnly ? 'fill-white' : ''}`} />
@@ -309,8 +308,8 @@ export default function Feed() {
                                             key={cat.value}
                                             onClick={() => toggleCategory(cat.value)}
                                             className={`px-3 py-1.5 rounded-xl text-xs font-bold border-2 transition-all ${selectedCategories.includes(cat.value)
-                                                    ? 'bg-primary text-white border-primary'
-                                                    : 'bg-white dark:bg-slate-800 text-slate-500 border-transparent hover:border-slate-200'
+                                                ? 'bg-primary text-white border-primary'
+                                                : 'bg-white dark:bg-slate-800 text-slate-500 border-transparent hover:border-slate-200'
                                                 }`}
                                         >
                                             {cat.label}
@@ -408,19 +407,19 @@ export default function Feed() {
                         {activeTab === 'my_tasks' ? "You haven't posted any tasks yet" : "No tasks found"}
                     </h2>
                     <p className="text-slate-500 font-medium text-lg max-w-md mx-auto">
-                        {activeTab === 'my_tasks' 
-                            ? "Need a hand with something? Post a task and get help from your neighbours!" 
+                        {activeTab === 'my_tasks'
+                            ? "Need a hand with something? Post a task and get help from your neighbours!"
                             : "Try adjusting your filters or search terms to find more opportunities in your neighbourhood."}
                     </p>
                     {activeTab === 'my_tasks' ? (
-                        <button 
+                        <button
                             onClick={() => router.push('/tasks/create')}
                             className="mt-8 px-8 py-3 bg-primary text-white font-bold rounded-2xl shadow-lg hover:shadow-xl transition-all"
                         >
                             Post Your First Task
                         </button>
                     ) : (
-                        <button 
+                        <button
                             onClick={clearFilters}
                             className="mt-8 px-8 py-3 bg-primary text-white font-bold rounded-2xl shadow-lg hover:shadow-xl transition-all"
                         >

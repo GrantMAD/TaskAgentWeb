@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
     Rocket, 
@@ -363,7 +364,7 @@ export default function CreateTask() {
                                 <input type="file" className="hidden" accept="image/*" onChange={handleImageChange} />
                                 {imagePreview ? (
                                     <>
-                                        <img src={imagePreview} className="w-full h-full object-cover" />
+                                        <Image src={imagePreview} alt="Image upload preview" fill className="object-cover" />
                                         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
                                             <Camera className="w-8 h-8 text-white" />
                                         </div>

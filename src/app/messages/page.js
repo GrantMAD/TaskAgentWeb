@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
     MessageSquare, 
@@ -143,7 +144,9 @@ export default function Messages() {
                                 <div className="relative shrink-0">
                                     <div className="w-16 h-16 rounded-2xl bg-slate-100 p-0.5 overflow-hidden">
                                         {otherUser?.profile_image ? (
-                                            <img src={otherUser.profile_image} className="w-full h-full object-cover rounded-[14px]" />
+                                            <div className="relative w-full h-full rounded-[14px] overflow-hidden">
+                                                <Image src={otherUser.profile_image} alt={`${otherUser.name}'s avatar`} fill sizes="64px" className="object-cover" />
+                                            </div>
                                         ) : (
                                             <div className="w-full h-full flex items-center justify-center text-xl font-black text-primary uppercase">
                                                 {otherUser?.name?.charAt(0)}

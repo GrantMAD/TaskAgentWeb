@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
+import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
     ArrowLeft, 
@@ -273,7 +274,7 @@ export default function Chat() {
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-xl bg-slate-100 overflow-hidden relative">
                             {otherUser?.profile_image ? (
-                                <img src={otherUser.profile_image} className="w-full h-full object-cover" />
+                                <Image src={otherUser.profile_image} alt={`${otherUser.name}'s avatar`} fill sizes="40px" className="object-cover" />
                             ) : (
                                 <div className="w-full h-full flex items-center justify-center bg-primary/10 text-primary font-black uppercase">
                                     {otherUser?.name?.charAt(0)}
@@ -349,7 +350,9 @@ export default function Chat() {
                             exit={{ height: 0, opacity: 0 }}
                             className="bg-slate-50 dark:bg-slate-800/50 rounded-3xl p-4 mb-4 relative"
                         >
-                            <img src={imagePreview} className="w-24 h-24 object-cover rounded-2xl shadow-md" />
+                            <div className="relative w-24 h-24 rounded-2xl overflow-hidden shadow-md">
+                                <Image src={imagePreview} alt="Image upload preview" fill sizes="96px" className="object-cover" />
+                            </div>
                             <button 
                                 onClick={() => { setSelectedImage(null); setImagePreview(null); }}
                                 className="absolute top-2 right-auto left-28 p-1 bg-white dark:bg-slate-700 rounded-full shadow-lg border border-slate-100 dark:border-slate-600 hover:scale-110"

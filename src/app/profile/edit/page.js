@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
     Camera, 
@@ -15,7 +16,7 @@ import {
     ArrowLeft,
     ShieldCheck
 } from 'lucide-react';
-import { userService } from '../../../services/userService';
+import { profileService } from '../../../services/profileService';
 import { useAuth } from '../../../context/AuthContext';
 import { useToast } from '../../../context/ToastContext';
 
@@ -41,7 +42,7 @@ export default function EditProfile() {
         if (!user) return;
         const fetchProfile = async () => {
             try {
-                const data = await userService.getUserProfile(user.id);
+                const data = await profileService.getUserProfile(user.id);
                 if (data) {
                     setProfile({
                         name: data.name || '',
@@ -96,10 +97,10 @@ export default function EditProfile() {
         try {
             let finalImageUrl = profile.profile_image;
             if (imageFile) {
-                finalImageUrl = await userService.uploadAvatar(user.id, imageFile);
+                finalImageUrl = await profileService.uploadAvatar(user.id, imageFile);
             }
 
-            await userService.updateUserProfile(user.id, {
+            await profileService.updateUserProfile(user.id, {
                 ...profile,
                 profile_image: finalImageUrl
             });
@@ -142,9 +143,9 @@ export default function EditProfile() {
                 {/* Image Section */}
                 <div className="flex flex-col items-center gap-6">
                     <div className="relative group">
-                        <div className="w-32 h-32 rounded-[40px] bg-slate-100 dark:bg-slate-800 overflow-hidden border-4 border-white dark:border-slate-900 shadow-2xl">
+                        <div className="relative w-32 h-32 rounded-[40px] bg-slate-100 dark:bg-slate-800 overflow-hidden border-4 border-white dark:border-slate-900 shadow-2xl">
                             {imagePreview ? (
-                                <img src={imagePreview} className="w-full h-full object-cover" />
+                                <Image src={imagePreview} alt="Avatar preview" fill className="object-cover" />
                             ) : (
                                 <div className="w-full h-full flex items-center justify-center">
                                     <User className="w-12 h-12 text-slate-300" />

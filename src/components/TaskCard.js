@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { MapPin, Heart, Repeat, ChevronRight } from 'lucide-react';
+import Image from 'next/image';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { CURRENCY_SYMBOL } from '../utils/constants';
@@ -75,11 +76,15 @@ export default function TaskCard({ task, onClick }) {
             <div className="flex items-center justify-between mt-auto pt-4 border-t border-slate-50 dark:border-slate-800">
                 <div className="flex items-center gap-3">
                     {task.poster?.profile_image ? (
-                        <img 
-                            src={task.poster.profile_image} 
-                            alt={task.poster.name}
-                            className="w-10 h-10 rounded-xl object-cover ring-2 ring-slate-100 dark:ring-slate-800"
-                        />
+                        <div className="relative w-10 h-10 ring-2 ring-slate-100 dark:ring-slate-800 rounded-xl overflow-hidden shrink-0">
+                            <Image 
+                                src={task.poster.profile_image} 
+                                alt={task.poster.name ? `${task.poster.name}'s avatar` : 'Avatar'}
+                                fill
+                                sizes="40px"
+                                className="object-cover"
+                            />
+                        </div>
                     ) : (
                         <div className="w-10 h-10 rounded-xl bg-premium-gradient flex items-center justify-center text-white font-bold text-sm">
                             {task.poster?.name?.charAt(0) || '?'}

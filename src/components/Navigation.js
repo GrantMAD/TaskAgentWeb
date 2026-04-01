@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { 
     Home, 
@@ -93,8 +94,8 @@ export default function Navigation() {
             <div className="container mx-auto px-4 md:px-6 flex items-center justify-between">
                 {/* Logo */}
                 <Link href="/" className="flex items-center gap-2 group">
-                    <div className="w-10 h-10 bg-white dark:bg-slate-900 rounded-xl flex items-center justify-center shadow-lg transform group-hover:scale-110 transition-transform overflow-hidden p-1">
-                        <img src="/TaskLogo.png" alt="TaskAgent Logo" className="w-full h-full object-contain" />
+                    <div className="relative w-10 h-10 bg-white dark:bg-slate-900 rounded-xl flex items-center justify-center shadow-lg transform group-hover:scale-110 transition-transform overflow-hidden p-1 shrink-0">
+                        <Image src="/TaskLogo.png" alt="TaskAgent Logo" fill sizes="40px" className="object-contain" priority />
                     </div>
                     <span className={`text-xl font-bold tracking-tight ${isScrolled ? 'text-primary dark:text-white' : 'text-primary dark:text-white'}`}>
                         Task<span className="text-accent">Agent</span>
@@ -218,9 +219,14 @@ export default function Navigation() {
                                     onClick={() => setIsProfileOpen(!isProfileOpen)}
                                     className="flex items-center gap-3 group"
                                 >
-                                    <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden border-2 border-transparent group-hover:border-primary transition-all shadow-sm">
+                                    <div className="relative w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden border-2 border-transparent group-hover:border-primary transition-all shadow-sm">
                                         {userProfile?.profile_image ? (
-                                            <img src={userProfile.profile_image} className="w-full h-full object-cover" />
+                                            <Image 
+                                                src={userProfile.profile_image} 
+                                                alt={`${userProfile.name}'s profile photo`}
+                                                fill sizes="40px" 
+                                                className="object-cover" 
+                                            />
                                         ) : (
                                             <div className="w-full h-full flex items-center justify-center bg-primary text-white font-bold">
                                                 {userProfile?.name?.charAt(0) || user.email.charAt(0).toUpperCase()}

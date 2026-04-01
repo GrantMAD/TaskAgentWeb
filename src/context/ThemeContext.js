@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '../services/supabaseClient';
-import { userService } from '../services/userService';
+import { profileService } from '../services/profileService';
 import { useAuth } from './AuthContext';
 
 const ThemeContext = createContext();
@@ -66,7 +66,7 @@ export const ThemeProvider = ({ children }) => {
         
         if (session) {
             try {
-                await userService.updateUserProfile(session.user.id, { dark_mode: newMode });
+                await profileService.updateUserProfile(session.user.id, { dark_mode: newMode });
             } catch (error) {
                 console.error('Error saving theme preference:', error);
             }

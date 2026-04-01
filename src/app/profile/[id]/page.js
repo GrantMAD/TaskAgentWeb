@@ -17,7 +17,8 @@ import {
     Briefcase
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
-import { userService } from '../../../services/userService';
+import { profileService } from '../../../services/profileService';
+import { reviewService } from '../../../services/reviewService';
 import { messageService } from '../../../services/messageService';
 import { reliabilityService } from '../../../services/reliabilityService';
 import { interactionService } from '../../../services/interactionService';
@@ -51,8 +52,8 @@ export default function PublicProfile() {
         try {
             setLoading(true);
             const [userData, reviewData, reliabilityData] = await Promise.all([
-                userService.getUserProfile(userId),
-                userService.getUserReviews(userId),
+                profileService.getUserProfile(userId),
+                reviewService.getUserReviews(userId),
                 reliabilityService.getUserReliability(userId)
             ]);
 

@@ -11,6 +11,14 @@ export const TASK_CATEGORIES = [
     { label: 'Other', value: 'Other', icon: '📍' },
 ];
 
+export const TASK_STATUS = {
+    OPEN: 'OPEN',
+    ASSIGNED: 'ASSIGNED',
+    PENDING_CONFIRMATION: 'PENDING_CONFIRMATION',
+    COMPLETED: 'COMPLETED',
+    CANCELLED: 'CANCELLED'
+};
+
 export const NEIGHBOURHOOD_TIPS = [
     {
         id: 1,

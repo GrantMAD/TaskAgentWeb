@@ -324,20 +324,31 @@ export default function Feed() {
                                 <div className="flex items-center gap-3">
                                     <input
                                         type="number"
+                                        min="0"
                                         placeholder="Min"
                                         value={priceRange.min}
-                                        onChange={(e) => setPriceRange({ ...priceRange, min: e.target.value })}
+                                        onChange={(e) => {
+                                            const val = Math.max(0, parseInt(e.target.value) || 0);
+                                            setPriceRange({ ...priceRange, min: e.target.value ? val.toString() : '' });
+                                        }}
                                         className="w-full px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:border-primary"
                                     />
                                     <span className="text-slate-400">to</span>
                                     <input
                                         type="number"
+                                        min="0"
                                         placeholder="Max"
                                         value={priceRange.max}
-                                        onChange={(e) => setPriceRange({ ...priceRange, max: e.target.value })}
+                                        onChange={(e) => {
+                                            const val = Math.max(0, parseInt(e.target.value) || 0);
+                                            setPriceRange({ ...priceRange, max: e.target.value ? val.toString() : '' });
+                                        }}
                                         className="w-full px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:border-primary"
                                     />
                                 </div>
+                                {priceRange.min && priceRange.max && Number(priceRange.max) < Number(priceRange.min) && (
+                                    <p className="mt-2 text-[11px] font-bold text-red-500 bg-red-50 dark:bg-red-900/20 px-2 py-1 rounded-md w-fit">Max must be greater than min.</p>
+                                )}
                             </div>
 
                             {/* Sorting */}

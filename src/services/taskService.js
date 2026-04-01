@@ -2,6 +2,7 @@ import { supabase } from './supabaseClient'
 import { notificationService } from './notificationService'
 import { rateLimitService } from './rateLimitService'
 import { sanitizeString, sanitizeObject } from '../utils/sanitization'
+import { TASK_STATUS } from '../utils/constants'
 
 export const taskService = {
     uploadTaskImage: async (file, userId) => {
@@ -99,7 +100,7 @@ export const taskService = {
         const { data, error } = await supabase
             .from('tasks')
             .select('*, poster:users!poster_id(id, name, profile_image, rating)')
-            .eq('status', 'OPEN')
+            .eq('status', TASK_STATUS.OPEN)
             .order('created_at', { ascending: false })
             .range(offset, offset + limit - 1)
         if (error) throw error
@@ -130,7 +131,7 @@ export const taskService = {
             .from('tasks')
             .select('*, poster:users!poster_id(id, name, profile_image, rating)')
             .eq('assigned_worker_id', workerId)
-            .in('status', ['ASSIGNED', 'PENDING_CONFIRMATION'])
+            .in('status', [TASK_STATUS.ASSIGNED, TASK_STATUS.PENDING_CONFIRMATION])
             .order('created_at', { ascending: false })
         if (error) throw error
         return data
@@ -141,7 +142,7 @@ export const taskService = {
             .from('tasks')
             .select('*, worker:users!assigned_worker_id(id, name, profile_image, rating)')
             .eq('poster_id', posterId)
-            .in('status', ['OPEN', 'ASSIGNED', 'PENDING_CONFIRMATION'])
+            .in('status', [TASK_STATUS.OPEN, TASK_STATUS.ASSIGNED, TASK_STATUS.PENDING_CONFIRMATION])
             .order('created_at', { ascending: false })
         if (error) throw error
         return data
@@ -165,8 +166,8 @@ export const taskService = {
             .map(item => item.task)
             .filter(task => 
                 task && 
-                task.status !== 'COMPLETED' && 
-                task.status !== 'CANCELLED' &&
+                task.status !== TASK_STATUS.COMPLETED && 
+                task.status !== TASK_STATUS.CANCELLED &&
                 task.assigned_worker_id !== workerId
             );
     },
@@ -175,7 +176,7 @@ export const taskService = {
         const { data, error } = await supabase
             .from('tasks')
             .select('*, poster:users!poster_id(id, name, profile_image, rating), worker:users!assigned_worker_id(id, name, profile_image, rating)')
-            .eq('status', 'COMPLETED')
+            .eq('status', TASK_STATUS.COMPLETED)
             .or(`poster_id.eq.${userId},assigned_worker_id.eq.${userId}`)
             .order('created_at', { ascending: false })
         if (error) throw error
@@ -230,11 +231,19 @@ export const taskService = {
 
         const { data: task, error: fetchError } = await supabase
             .from('tasks')
-            .select('poster_id')
+            .select('poster_id, title')
             .eq('id', taskId)
             .single()
         
         if (fetchError) throw fetchError
+
+        const { data: worker, error: workerError } = await supabase
+            .from('users')
+            .select('name')
+            .eq('id', workerId)
+            .single()
+
+        if (workerError) throw workerError
 
         const { data, error } = await supabase
             .from('task_applications')
@@ -248,7 +257,7 @@ export const taskService = {
         await notificationService.createNotification(
             task.poster_id,
             'New Application',
-            'Someone applied for your job...',
+            `${worker.name} applied for your task: ${task.title}`,
             'APPLICATION',
             taskId
         )
@@ -293,7 +302,7 @@ export const taskService = {
 
         const { data, error } = await supabase
             .from('tasks')
-            .update({ assigned_worker_id: workerId, status: 'ASSIGNED' })
+            .update({ assigned_worker_id: workerId, status: TASK_STATUS.ASSIGNED })
             .eq('id', taskId)
         if (error) throw error
 
@@ -320,7 +329,7 @@ export const taskService = {
         const { data, error } = await supabase
             .from('tasks')
             .update({ 
-                status: 'PENDING_CONFIRMATION',
+                status: TASK_STATUS.PENDING_CONFIRMATION,
                 completion_image_url: completionImageUrl
             })
             .eq('id', taskId)
@@ -348,7 +357,7 @@ export const taskService = {
 
         const { data, error } = await supabase
             .from('tasks')
-            .update({ status: 'COMPLETED' })
+            .update({ status: TASK_STATUS.COMPLETED })
             .eq('id', taskId)
         if (error) throw error
 
@@ -401,7 +410,7 @@ export const taskService = {
             // 3. Update task status
             const { data, error } = await supabase
                 .from('tasks')
-                .update({ status: 'CANCELLED' })
+                .update({ status: TASK_STATUS.CANCELLED })
                 .eq('id', taskId);
 
             if (error) throw error;
@@ -471,7 +480,7 @@ export const taskService = {
             .from('tasks')
             .select('payment_amount')
             .eq('category', category)
-            .eq('status', 'COMPLETED')
+            .eq('status', TASK_STATUS.COMPLETED)
             .limit(20);
         
         if (error || !data || data.length === 0) return null;

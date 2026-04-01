@@ -43,6 +43,20 @@ export default function Feed() {
     const [showSavedOnly, setShowSavedOnly] = useState(false);
     const [isFilterOpen, setIsFilterOpen] = useState(false);
     const [activeTab, setActiveTab] = useState('all');
+    const [userLocation, setUserLocation] = useState(null);
+
+    // Get user location on mount for radius filtering
+    useEffect(() => {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (pos) => setUserLocation({ 
+                    lat: pos.coords.latitude, 
+                    lng: pos.coords.longitude 
+                }),
+                (err) => console.warn('Location blocked or unavailable:', err)
+            );
+        }
+    }, []);
 
     // Filters
     const [selectedCategories, setSelectedCategories] = useState(
@@ -63,7 +77,13 @@ export default function Feed() {
         try {
             const currentPage = isLoadMore ? page + 1 : 0;
             const offset = currentPage * ITEMS_PER_PAGE;
-            const data = await taskService.getNearbyTasks(ITEMS_PER_PAGE, offset);
+            const data = await taskService.getNearbyTasks(
+                user?.id, 
+                userLocation?.lat, 
+                userLocation?.lng, 
+                ITEMS_PER_PAGE, 
+                offset
+            );
 
             if (isLoadMore) {
                 setAllTasks(prev => [...prev, ...data]);
@@ -87,7 +107,7 @@ export default function Feed() {
     // Initial Load & Filter Changes
     useEffect(() => {
         fetchTasks(false);
-    }, [searchQuery, selectedCategories, priceRange, sortBy, showSavedOnly, activeTab]);
+    }, [searchQuery, selectedCategories, priceRange, sortBy, showSavedOnly, activeTab, userLocation]);
 
     // Infinite Scroll Observer
     useEffect(() => {

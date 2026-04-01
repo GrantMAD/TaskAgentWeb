@@ -15,7 +15,8 @@ import {
     ChevronRight,
     Loader2,
     Check,
-    Zap
+    Zap,
+    UserCircle
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
@@ -32,6 +33,9 @@ export default function Settings() {
     const [updating, setUpdating] = useState(false);
     const [deleteModalOpen, setDeleteModalOpen] = useState(false);
     const [deleteConfirmText, setDeleteConfirmText] = useState('');
+    const [passwordModalOpen, setPasswordModalOpen] = useState(false);
+    const [newPassword, setNewPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
     const [deleting, setDeleting] = useState(false);
 
     const radiusOptions = [
@@ -65,6 +69,34 @@ export default function Settings() {
             showToast(`Search radius set to ${value === 99999 ? 'all' : value + 'km'}`, 'success');
         } catch (error) {
             showToast('Failed to update search radius', 'error');
+        } finally {
+            setUpdating(false);
+        }
+    };
+
+    const handlePasswordUpdate = async () => {
+        if (!newPassword || !confirmPassword) {
+            showToast('Please fill all fields', 'warning');
+            return;
+        }
+        if (newPassword !== confirmPassword) {
+            showToast('Passwords do not match', 'error');
+            return;
+        }
+        if (newPassword.length < 6) {
+            showToast('Password must be at least 6 characters', 'warning');
+            return;
+        }
+
+        setUpdating(true);
+        try {
+            await userService.updateUserPassword(newPassword);
+            showToast('Password updated successfully', 'success');
+            setPasswordModalOpen(false);
+            setNewPassword('');
+            setConfirmPassword('');
+        } catch (error) {
+            showToast(error.message || 'Failed to update password', 'error');
         } finally {
             setUpdating(false);
         }
@@ -202,10 +234,22 @@ export default function Settings() {
                             className="w-full text-left"
                         >
                             <SettingItem 
+                                icon={UserCircle}
+                                iconBg="bg-slate-500"
+                                title="Edit Public Profile"
+                                description="Update your bio, skills and avatar"
+                                showChevron
+                            />
+                        </button>
+                        <button 
+                            onClick={() => setPasswordModalOpen(true)}
+                            className="w-full text-left"
+                        >
+                            <SettingItem 
                                 icon={Shield}
                                 iconBg="bg-primary"
-                                title="Profile Security"
-                                description="Manage your public bio and data"
+                                title="Change Password"
+                                description="Update your security credentials"
                                 showChevron
                             />
                         </button>
@@ -264,6 +308,44 @@ export default function Settings() {
                         placeholder="DELETE"
                         className="w-full px-6 py-4 bg-red-50 dark:bg-red-950/20 border-2 border-transparent focus:border-red-500 rounded-2xl text-red-600 font-black outline-none transition-all placeholder:text-red-200"
                     />
+                </div>
+            </ConfirmationModal>
+
+            <ConfirmationModal
+                isOpen={passwordModalOpen}
+                type="primary"
+                title="Update Password"
+                message="Choose a strong password to keep your account secure. You'll need this next time you sign in."
+                confirmText="Update Password"
+                loading={updating}
+                onConfirm={handlePasswordUpdate}
+                onCancel={() => {
+                    setPasswordModalOpen(false);
+                    setNewPassword('');
+                    setConfirmPassword('');
+                }}
+            >
+                <div className="space-y-4">
+                    <div className="space-y-2">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">New Password</label>
+                        <input 
+                            type="password"
+                            value={newPassword}
+                            onChange={(e) => setNewPassword(e.target.value)}
+                            placeholder="At least 6 characters"
+                            className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-2 border-transparent focus:border-primary rounded-2xl font-bold outline-none transition-all placeholder:text-slate-300"
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Confirm New Password</label>
+                        <input 
+                            type="password"
+                            value={confirmPassword}
+                            onChange={(e) => setConfirmPassword(e.target.value)}
+                            placeholder="Type it again"
+                            className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-2 border-transparent focus:border-primary rounded-2xl font-bold outline-none transition-all placeholder:text-slate-300"
+                        />
+                    </div>
                 </div>
             </ConfirmationModal>
         </div>

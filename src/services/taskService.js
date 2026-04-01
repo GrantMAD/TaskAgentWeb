@@ -90,7 +90,12 @@ export const taskService = {
         return data[0];
     },
 
-    getNearbyTasks: async (limit = 100, offset = 0) => {
+    getNearbyTasks: async (userId = null, lat = null, lng = null, limit = 12, offset = 0) => {
+        // If we have user coordinates and a user ID, use the smart RPC for distance-aware results
+        if (userId && lat && lng) {
+            return taskService.getPersonalizedTasks(userId, lat, lng, limit);
+        }
+
         const { data, error } = await supabase
             .from('tasks')
             .select('*, poster:users!poster_id(id, name, profile_image, rating)')

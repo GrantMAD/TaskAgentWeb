@@ -123,5 +123,12 @@ export const userService = {
             console.error('Error in deleteUserAccount:', error);
             throw error;
         }
+    },
+    
+    // Auth Updates
+    updateUserPassword: async (newPassword) => {
+        const { data, error } = await supabase.auth.updateUser({ password: newPassword });
+        if (error) throw error;
+        return data;
     }
 }

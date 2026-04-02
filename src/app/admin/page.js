@@ -20,13 +20,15 @@ import {
     MoreHorizontal,
     UserMinus,
     UserCheck,
-    Globe
+    Globe,
+    ShieldAlert
 } from 'lucide-react';
 import { adminService } from '../../services/adminService';
 import { notificationService } from '../../services/notificationService';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import UserAvatar from '../../components/UserAvatar';
+import DisputeResolutionModal from '../../components/DisputeResolutionModal';
 
 export default function AdminDashboard() {
     const { user, userProfile } = useAuth();
@@ -42,6 +44,8 @@ export default function AdminDashboard() {
     const [users, setUsers] = useState([]);
     const [tasks, setTasks] = useState([]);
     const [reports, setReports] = useState([]);
+    const [disputes, setDisputes] = useState([]);
+    const [selectedDispute, setSelectedDispute] = useState(null);
     const [loading, setLoading] = useState(true);
     const [actionLoading, setActionLoading] = useState(false);
 
@@ -73,14 +77,16 @@ export default function AdminDashboard() {
             setReputationData(reputationStats);
 
             // Fetch list data for tabs
-            const [usersList, tasksList, reportsList] = await Promise.all([
+            const [usersList, tasksList, reportsList, disputesList] = await Promise.all([
                 adminService.getAllUsers(),
                 adminService.getAllTasks(),
-                adminService.getReports(false)
+                adminService.getReports(false),
+                adminService.getDisputes(false)
             ]);
             setUsers(usersList);
             setTasks(tasksList);
             setReports(reportsList);
+            setDisputes(disputesList);
         } catch (error) {
             showToast('Failed to load admin data', 'error');
         } finally {
@@ -166,6 +172,7 @@ export default function AdminDashboard() {
                     { id: 'overview', label: 'Overview', icon: TrendingUp },
                     { id: 'users', label: 'Neighbours', icon: Users },
                     { id: 'reports', label: 'Reports', icon: Flag, badge: stats?.pendingReports },
+                    { id: 'disputes', label: 'Disputes', icon: ShieldAlert, badge: stats?.pendingDisputes },
                     { id: 'insights', label: 'Market Gaps', icon: Globe },
                 ].map((tab) => (
                     <button
@@ -401,6 +408,64 @@ export default function AdminDashboard() {
                     </div>
                 )}
 
+                {activeTab === 'disputes' && (
+                    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                        {disputes.length === 0 ? (
+                            <div className="py-32 text-center bg-white dark:bg-slate-900/50 rounded-[48px] border-2 border-dashed border-slate-200 dark:border-slate-800">
+                                <ShieldCheck className="w-16 h-16 text-emerald-100 mx-auto mb-6" />
+                                <h3 className="text-2xl font-black text-slate-400 uppercase tracking-tight">Peace & Harmony</h3>
+                                <p className="text-slate-400 font-bold mt-2">No active disputes in the neighbourhood.</p>
+                            </div>
+                        ) : (
+                            disputes.map((dispute) => (
+                                <motion.div 
+                                    key={dispute.id}
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    className="bg-white dark:bg-slate-900 rounded-[32px] p-8 border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col md:flex-row gap-8"
+                                >
+                                    <div className="flex-1">
+                                        <div className="flex items-center gap-3 mb-4">
+                                            <span className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest ${
+                                                dispute.status === 'PENDING' ? 'bg-amber-50 text-amber-500' : 'bg-slate-100 text-slate-500'
+                                            }`}>
+                                                {dispute.status}
+                                            </span>
+                                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{new Date(dispute.created_at).toLocaleDateString()}</span>
+                                        </div>
+                                        <h4 className="text-xl font-black text-slate-900 dark:text-white mb-1">{dispute.task?.title}</h4>
+                                        <p className="text-sm font-black text-primary mb-4">Budget: R{dispute.task?.payment_amount}</p>
+                                        <p className="text-sm font-bold text-slate-600 dark:text-slate-400 mb-2">Reason: {dispute.reason}</p>
+                                        <p className="text-sm font-medium text-slate-500 leading-relaxed mb-6 italic">"{dispute.details || 'No additional details.'}"</p>
+                                        
+                                        <div className="flex flex-wrap gap-4">
+                                            <div className="px-4 py-2 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700">
+                                                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Raised By</p>
+                                                <p className="font-bold text-slate-700 dark:text-slate-300">{dispute.raised_by?.name}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="shrink-0 flex flex-col justify-center gap-3 w-full md:w-auto">
+                                        {dispute.status === 'PENDING' ? (
+                                            <button 
+                                                onClick={() => setSelectedDispute(dispute)}
+                                                className="px-8 py-4 bg-primary text-white rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-lg shadow-primary/20 hover:scale-105 transition-all"
+                                            >
+                                                Review & Mediate
+                                            </button>
+                                        ) : (
+                                            <div className="text-right">
+                                                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Resolved At</p>
+                                                <p className="text-xs font-bold text-slate-500">{new Date(dispute.resolved_at).toLocaleDateString()}</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                </motion.div>
+                            ))
+                        )}
+                    </div>
+                )}
+
                 {activeTab === 'insights' && (
                     <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
@@ -472,6 +537,16 @@ export default function AdminDashboard() {
                     </div>
                 )}
             </div>
+
+            <DisputeResolutionModal 
+                isOpen={!!selectedDispute}
+                onClose={() => setSelectedDispute(null)}
+                dispute={selectedDispute}
+                onResolved={() => {
+                    fetchInitialData();
+                    setSelectedDispute(null);
+                }}
+            />
         </div>
     );
 }

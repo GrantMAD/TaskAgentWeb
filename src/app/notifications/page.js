@@ -64,6 +64,8 @@ export default function Notifications() {
             case 'COMPLETED':
             case 'INVITATION_ACCEPTED':
             case 'INVITATION_DECLINED':
+            case 'dispute_raised':
+            case 'dispute_resolved':
                 if (item.related_id) router.push(`/tasks/${item.related_id}`);
                 break;
             case 'MESSAGE':

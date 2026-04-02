@@ -23,17 +23,20 @@ import {
     Loader2,
     Star,
     PartyPopper,
-    PencilLine
+    PencilLine,
+    ShieldAlert
 } from 'lucide-react';
 import { taskService } from '../../../services/taskService';
 import { messageService } from '../../../services/messageService';
 import { interactionService } from '../../../services/interactionService';
+import { disputeService } from '../../../services/disputeService';
 import { supabase } from '../../../services/supabaseClient';
 import { useAuth } from '../../../context/AuthContext';
 import { useToast } from '../../../context/ToastContext';
-import { CURRENCY_SYMBOL } from '../../../utils/constants';
+import { CURRENCY_SYMBOL, TASK_STATUS } from '../../../utils/constants';
 import { formatDistanceToNow } from 'date-fns';
 import ReportModal from '../../../components/ReportModal';
+import DisputeModal from '../../../components/DisputeModal';
 import ConfirmationModal from '../../../components/ConfirmationModal';
 
 export default function TaskDetail() {
@@ -44,6 +47,7 @@ export default function TaskDetail() {
 
     const [task, setTask] = useState(null);
     const [applications, setApplications] = useState([]);
+    const [dispute, setDispute] = useState(null);
     const [loading, setLoading] = useState(true);
     const [actionLoading, setActionLoading] = useState(false);
     const [isSaved, setIsSaved] = useState(false);
@@ -52,6 +56,7 @@ export default function TaskDetail() {
     const [showApplyModal, setShowApplyModal] = useState(false);
     const [applyMessage, setApplyMessage] = useState('');
     const [showReportModal, setShowReportModal] = useState(false);
+    const [showDisputeModal, setShowDisputeModal] = useState(false);
     const [confirmationConfig, setConfirmationConfig] = useState({
         isOpen: false,
         title: '',
@@ -81,8 +86,20 @@ export default function TaskDetail() {
             const data = await taskService.getTaskDetails(taskId);
             setTask(data);
             
+            if (!data) {
+                setLoading(false);
+                return;
+            }
+
             const apps = await taskService.getTaskApplications(taskId);
             setApplications(apps);
+
+            if (data.status === TASK_STATUS.DISPUTED) {
+                const disputeData = await disputeService.getTaskDispute(taskId);
+                setDispute(disputeData);
+            } else {
+                setDispute(null);
+            }
             
             setIsSaved(savedTaskIds.includes(taskId));
         } catch (error) {
@@ -347,6 +364,25 @@ export default function TaskDetail() {
                 )}
             </AnimatePresence>
 
+            {/* Dispute Banner */}
+            {task.status === TASK_STATUS.DISPUTED && (
+                <div className="mb-8 p-8 bg-amber-500 rounded-[32px] text-white flex flex-col md:flex-row items-center gap-6 shadow-xl shadow-amber-500/20 relative overflow-hidden">
+                    <div className="absolute top-[-50%] right-[-10%] w-64 h-64 bg-white/10 rounded-full blur-3xl pointer-events-none" />
+                    
+                    <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center shrink-0">
+                        <ShieldAlert className="w-8 h-8 text-white" />
+                    </div>
+                    <div className="flex-1 text-center md:text-left">
+                        <h2 className="text-2xl font-black mb-1">Dispute in Progress</h2>
+                        <p className="font-bold opacity-90">
+                            {dispute?.raised_by?.id === user?.id 
+                                ? "You have raised a dispute. An admin will review the details and mediate shortly."
+                                : "A dispute has been raised on this task. An admin is reviewing the situation."}
+                        </p>
+                    </div>
+                </div>
+            )}
+
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
                 {/* Left Column: Details */}
                 <div className="lg:col-span-2 space-y-10">
@@ -533,7 +569,7 @@ export default function TaskDetail() {
                                 </button>
                             )}
 
-                            {isWorker && task.status === 'IN_PROGRESS' && (
+                            {isWorker && task.status === TASK_STATUS.ASSIGNED && (
                                 <button 
                                     onClick={handleMarkComplete}
                                     className="w-full py-5 bg-emerald-500 text-white rounded-[24px] font-black text-xl shadow-xl shadow-emerald-500/20 hover:scale-[1.02] transition-all"
@@ -542,12 +578,24 @@ export default function TaskDetail() {
                                 </button>
                             )}
 
-                            {isPoster && task.status === 'COMPLETED' && (
+                            {isPoster && task.status === TASK_STATUS.PENDING_CONFIRMATION && (
                                 <button 
                                     onClick={handleApprove}
                                     className="w-full py-5 bg-emerald-500 text-white rounded-[24px] font-black text-xl shadow-xl shadow-emerald-500/20 hover:scale-[1.02] transition-all"
                                 >
                                     Approve Completion
+                                </button>
+                            )}
+
+                            {/* Dispute Trigger */}
+                            {(isWorker || isPoster) && 
+                             [TASK_STATUS.ASSIGNED, TASK_STATUS.PENDING_CONFIRMATION].includes(task.status) && (
+                                <button 
+                                    onClick={() => setShowDisputeModal(true)}
+                                    className="w-full py-4 group flex items-center justify-center gap-2 text-slate-400 hover:text-amber-500 transition-all font-bold text-sm"
+                                >
+                                    <ShieldAlert className="w-4 h-4" />
+                                    Raise a Dispute
                                 </button>
                             )}
 
@@ -662,6 +710,15 @@ export default function TaskDetail() {
                 targetId={taskId}
                 targetType="task"
                 targetName={task.title}
+            />
+
+            <DisputeModal 
+                isOpen={showDisputeModal}
+                onClose={() => setShowDisputeModal(false)}
+                taskId={taskId}
+                taskTitle={task.title}
+                otherPartyId={isPoster ? task.assigned_worker_id : task.poster_id}
+                onDisputeRaised={fetchTaskDetails}
             />
 
             <ConfirmationModal 

@@ -1,5 +1,6 @@
 import { supabase } from './supabaseClient';
 import { reliabilityService } from './reliabilityService';
+import { notificationService } from './notificationService';
 
 export const adminService = {
     /**
@@ -9,22 +10,97 @@ export const adminService = {
         const [
             { count: userCount, error: userError },
             { count: taskCount, error: taskError },
-            { count: reportCount, error: reportError }
+            { count: reportCount, error: reportError },
+            { count: disputeCount, error: disputeError }
         ] = await Promise.all([
             supabase.from('users').select('*', { count: 'exact', head: true }),
             supabase.from('tasks').select('*', { count: 'exact', head: true }).neq('status', 'COMPLETED'),
-            supabase.from('reports').select('*', { count: 'exact', head: true }).eq('status', 'PENDING')
+            supabase.from('reports').select('*', { count: 'exact', head: true }).eq('status', 'PENDING'),
+            supabase.from('disputes').select('*', { count: 'exact', head: true }).eq('status', 'PENDING')
         ]);
 
         if (userError) throw userError;
         if (taskError) throw taskError;
         if (reportError) throw reportError;
+        if (disputeError) throw disputeError;
 
         return {
             totalUsers: userCount || 0,
             activeTasks: taskCount || 0,
-            pendingReports: reportCount || 0
+            pendingReports: reportCount || 0,
+            pendingDisputes: disputeCount || 0
         };
+    },
+
+    /**
+     * Get list of disputes
+     */
+    getDisputes: async (pendingOnly = true) => {
+        let query = supabase
+            .from('disputes')
+            .select(`
+                *,
+                raised_by:users!raised_by_id(name),
+                task:tasks!task_id(title, poster_id, assigned_worker_id, payment_amount)
+            `);
+        
+        if (pendingOnly) {
+            query = query.eq('status', 'PENDING');
+        }
+
+        const { data, error } = await query.order('created_at', { ascending: false });
+
+        if (error) throw error;
+        return data;
+    },
+
+    /**
+     * Resolve a dispute
+     */
+    resolveDispute: async (disputeId, taskId, finalStatus, resolutionText) => {
+        // 1. Get dispute and task info for notification
+        const { data: dispute, error: fetchError } = await supabase
+            .from('disputes')
+            .select(`
+                raised_by_id,
+                task:tasks!task_id(title)
+            `)
+            .eq('id', disputeId)
+            .single();
+
+        if (fetchError) throw fetchError;
+
+        // 2. Update dispute record
+        const { error: disputeError } = await supabase
+            .from('disputes')
+            .update({
+                status: 'RESOLVED',
+                resolution_text: resolutionText,
+                resolved_at: new Date().toISOString()
+            })
+            .eq('id', disputeId);
+
+        if (disputeError) throw disputeError;
+
+        // 3. Update task status
+        const { error: taskError } = await supabase
+            .from('tasks')
+            .update({ status: finalStatus })
+            .eq('id', taskId);
+
+        if (taskError) throw taskError;
+
+        // 4. Notify the person who raised the dispute
+        const statusText = finalStatus === 'COMPLETED' ? 'Approved (Payment Released)' : 'Cancelled (No Payment)';
+        await notificationService.createNotification(
+            dispute.raised_by_id,
+            'Dispute Resolved',
+            `The dispute on task "${dispute.task.title}" has been resolved as: ${statusText}. Admin notes: ${resolutionText.substring(0, 100)}${resolutionText.length > 100 ? '...' : ''}`,
+            'dispute_resolved',
+            taskId
+        );
+
+        return true;
     },
 
     /**

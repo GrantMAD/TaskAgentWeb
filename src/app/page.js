@@ -12,7 +12,8 @@ import {
     MessageCircle, 
     Zap,
     MapPin,
-    Ghost
+    Ghost,
+    ShieldAlert
 } from 'lucide-react';
 import { taskService } from '../services/taskService';
 import { adminService } from '../services/adminService';
@@ -28,6 +29,7 @@ export default function Home() {
     const { showToast } = useToast();
     const [nearbyTasks, setNearbyTasks] = useState([]);
     const [appliedTasks, setAppliedTasks] = useState([]);
+    const [disputedTasks, setDisputedTasks] = useState([]);
     const [topNeighbours, setTopNeighbours] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -39,21 +41,21 @@ export default function Home() {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const promises = [
+                const [tasksData, repData] = await Promise.all([
                     taskService.getNearbyTasks(),
                     adminService.getReputationAnalytics()
-                ];
-
-                if (user?.id) {
-                    promises.push(taskService.getAppliedTasks(user.id));
-                }
-
-                const [tasksData, repData, appliedData] = await Promise.all(promises);
+                ]);
                 
                 setNearbyTasks(tasksData.slice(0, 3));
                 setTopNeighbours(repData.superstars.slice(0, 4));
-                if (appliedData) {
+
+                if (user?.id) {
+                    const [appliedData, disputedData] = await Promise.all([
+                        taskService.getAppliedTasks(user.id),
+                        taskService.getDisputedTasks(user.id)
+                    ]);
                     setAppliedTasks(appliedData.slice(0, 3));
+                    setDisputedTasks(disputedData);
                 }
             } catch (error) {
                 console.error('Error fetching landing page data:', error);
@@ -103,6 +105,29 @@ export default function Home() {
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.6 }}
                         >
+                            {/* Dispute Alert */}
+                            {user && disputedTasks.length > 0 && (
+                                <motion.div 
+                                    initial={{ scale: 0.9, opacity: 0 }}
+                                    animate={{ scale: 1, opacity: 1 }}
+                                    className="mb-8 p-6 bg-amber-500 rounded-[32px] text-white flex flex-col md:flex-row items-center gap-4 shadow-xl shadow-amber-500/20"
+                                >
+                                    <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center shrink-0">
+                                        <ShieldAlert className="w-6 h-6 text-white" />
+                                    </div>
+                                    <div className="flex-1 text-center md:text-left">
+                                        <p className="font-black text-sm uppercase tracking-tight">Action Required: {disputedTasks.length} {disputedTasks.length === 1 ? 'Dispute' : 'Disputes'} in Progress</p>
+                                        <p className="text-xs font-bold opacity-90">An admin is mediating your disagreement. Click to view status.</p>
+                                    </div>
+                                    <Link 
+                                        href={`/tasks/${disputedTasks[0].id}`}
+                                        className="px-6 py-2 bg-white text-amber-600 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-amber-50 transition-colors"
+                                    >
+                                        Review
+                                    </Link>
+                                </motion.div>
+                            )}
+
                             <span className="inline-flex items-center px-4 py-1.5 rounded-full text-sm font-bold bg-primary/10 text-primary dark:bg-primary/20 dark:text-blue-300 mb-6 border border-primary/20">
                                 <Zap className="w-4 h-4 mr-2 text-accent" />
                                 Neighbourhood Help, Reimagined

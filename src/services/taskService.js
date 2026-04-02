@@ -112,7 +112,7 @@ export const taskService = {
             .from('tasks')
             .select('*, poster:users!poster_id(id, name, profile_image, rating)')
             .eq('id', taskId)
-            .single()
+            .maybeSingle()
         if (error) throw error
         return data
     },
@@ -442,6 +442,19 @@ export const taskService = {
         
         if (error) throw error;
         return data.map(item => item.task).filter(Boolean);
+    },
+
+    getDisputedTasks: async (userId) => {
+        if (!userId) return [];
+        const { data, error } = await supabase
+            .from('tasks')
+            .select('*, poster:users!poster_id(id, name, profile_image, rating)')
+            .eq('status', TASK_STATUS.DISPUTED)
+            .or(`poster_id.eq.${userId},assigned_worker_id.eq.${userId}`)
+            .order('created_at', { ascending: false });
+        
+        if (error) throw error;
+        return data;
     },
 
     toggleSaveTask: async (userId, taskId, isCurrentlySaved) => {

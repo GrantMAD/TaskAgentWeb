@@ -76,7 +76,9 @@ export default function Navigation() {
             case 'NEW_APPLICATION':
             case 'APPLICATION_ACCEPTED':
             case 'APPLICATION_REJECTED':
-                return `/tasks/${notif.task_id}`;
+            case 'dispute_raised':
+            case 'dispute_resolved':
+                return `/tasks/${notif.related_id || notif.task_id}`;
             case 'NEW_MESSAGE':
                 return `/messages/${notif.conversation_id}`;
             case 'TASK_COMPLETED':

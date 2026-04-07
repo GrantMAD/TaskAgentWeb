@@ -18,6 +18,7 @@ import { supabase } from '../../services/supabaseClient';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { useNotifications } from '../../context/NotificationContext';
+import Skeleton from '../../components/Skeleton';
 
 export default function Messages() {
     const { user } = useAuth();
@@ -93,9 +94,14 @@ export default function Messages() {
 
     if (loading) {
         return (
-            <div className="container mx-auto px-4 py-24 flex flex-col items-center">
-                <Loader2 className="w-12 h-12 text-primary animate-spin mb-4" />
-                <p className="text-slate-500 font-black">Connecting to neighbours...</p>
+            <div className="container mx-auto px-4 py-8 lg:py-12 max-w-4xl animate-in fade-in duration-500">
+                <header className="mb-10">
+                    <Skeleton className="h-12 w-48 mb-2" />
+                    <Skeleton className="h-4 w-64" />
+                </header>
+                <div className="space-y-4">
+                    <Skeleton variant="MessageItem" count={5} />
+                </div>
             </div>
         );
     }

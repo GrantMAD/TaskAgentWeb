@@ -21,6 +21,7 @@ import TaskCard from '../../components/TaskCard';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { TASK_CATEGORIES, CURRENCY_SYMBOL } from '../../utils/constants';
+import Skeleton from '../../components/Skeleton';
 
 const ITEMS_PER_PAGE = 12;
 
@@ -377,9 +378,7 @@ export default function Feed() {
 
             {loading ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                    {[1, 2, 3, 4, 5, 6].map(i => (
-                        <div key={i} className="h-64 bg-slate-50 dark:bg-slate-900 rounded-[32px] animate-pulse" />
-                    ))}
+                    <Skeleton variant="TaskCard" count={6} />
                 </div>
             ) : filteredTasks.length > 0 ? (
                 <div className="pb-20">

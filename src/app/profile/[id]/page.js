@@ -27,6 +27,7 @@ import { useToast } from '../../../context/ToastContext';
 import UserAvatar from '../../../components/UserAvatar';
 import ReliabilityReport from '../../../components/ReliabilityReport';
 import ReportModal from '../../../components/ReportModal';
+import Skeleton from '../../../components/Skeleton';
 
 export default function PublicProfile() {
     const { id: userId } = useParams();
@@ -93,12 +94,7 @@ export default function PublicProfile() {
     };
 
     if (loading) {
-        return (
-            <div className="flex flex-col items-center justify-center min-h-[60vh]">
-                <Loader2 className="w-10 h-10 text-primary animate-spin mb-4" />
-                <p className="font-black text-slate-400 uppercase tracking-widest">Opening profile...</p>
-            </div>
-        );
+        return <Skeleton variant="Profile" />;
     }
 
     if (!profile) {

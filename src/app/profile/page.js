@@ -18,7 +18,8 @@ import {
     Loader2,
     Shield,
     Clock,
-    ArrowRight
+    ArrowRight,
+    TrendingUp
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { profileService } from '../../services/profileService';
@@ -29,6 +30,7 @@ import { useToast } from '../../context/ToastContext';
 import ReliabilityReport from '../../components/ReliabilityReport';
 import TaskCard from '../../components/TaskCard';
 import { taskService } from '../../services/taskService';
+import Skeleton from '../../components/Skeleton';
 
 export default function Profile() {
     const { user, signOut } = useAuth();
@@ -74,12 +76,7 @@ export default function Profile() {
     };
 
     if (loading) {
-        return (
-            <div className="container mx-auto px-4 py-24 flex flex-col items-center">
-                <Loader2 className="w-12 h-12 text-primary animate-spin mb-4" />
-                <p className="text-slate-500 font-black">Loading your neighbourhood hub...</p>
-            </div>
-        );
+        return <Skeleton variant="Profile" />;
     }
 
     if (!user || !profile) {
@@ -177,6 +174,15 @@ export default function Profile() {
                     <section className="bg-white dark:bg-slate-900 rounded-[40px] p-8 shadow-sm border border-slate-100 dark:border-slate-800">
                         <h2 className="text-sm font-black text-slate-400 uppercase tracking-widest mb-6">Menu</h2>
                         <div className="space-y-2">
+                            <button onClick={() => router.push('/profile/activity')} className="w-full flex items-center justify-between p-4 bg-primary/5 dark:bg-primary/10 rounded-2xl group transition-all border border-primary/10 shadow-sm hover:shadow-md">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 bg-white dark:bg-slate-800 rounded-xl">
+                                        <TrendingUp className="w-5 h-5 text-primary" />
+                                    </div>
+                                    <span className="font-black text-primary">Activity Dashboard</span>
+                                </div>
+                                <ArrowRight className="w-4 h-4 text-primary group-hover:translate-x-1 transition-transform" />
+                            </button>
                             <button onClick={() => router.push('/tasks/saved')} className="w-full flex items-center justify-between p-4 bg-white dark:bg-slate-800/50 rounded-2xl group transition-all border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-md">
                                 <div className="flex items-center gap-3">
                                     <div className="p-2 bg-slate-50 dark:bg-slate-700 rounded-xl">

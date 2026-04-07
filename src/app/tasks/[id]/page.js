@@ -38,6 +38,7 @@ import { formatDistanceToNow } from 'date-fns';
 import ReportModal from '../../../components/ReportModal';
 import DisputeModal from '../../../components/DisputeModal';
 import ConfirmationModal from '../../../components/ConfirmationModal';
+import Skeleton from '../../../components/Skeleton';
 
 export default function TaskDetail() {
     const { id: taskId } = useParams();
@@ -292,12 +293,7 @@ export default function TaskDetail() {
     };
 
     if (loading) {
-        return (
-            <div className="container mx-auto px-4 py-12 flex flex-col items-center">
-                <Loader2 className="w-12 h-12 text-primary animate-spin mb-4" />
-                <p className="text-slate-500 font-bold">Fetching task details...</p>
-            </div>
-        );
+        return <Skeleton variant="TaskDetail" />;
     }
 
     if (!task) {

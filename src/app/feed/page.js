@@ -20,6 +20,7 @@ import { interactionService } from '../../services/interactionService';
 import TaskCard from '../../components/TaskCard';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
+import { useLocation } from '../../context/LocationContext';
 import { TASK_CATEGORIES, CURRENCY_SYMBOL } from '../../utils/constants';
 import Skeleton from '../../components/Skeleton';
 
@@ -44,20 +45,7 @@ export default function Feed() {
     const [showSavedOnly, setShowSavedOnly] = useState(false);
     const [isFilterOpen, setIsFilterOpen] = useState(false);
     const [activeTab, setActiveTab] = useState('all');
-    const [userLocation, setUserLocation] = useState(null);
-
-    // Get user location on mount for radius filtering
-    useEffect(() => {
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-                (pos) => setUserLocation({
-                    lat: pos.coords.latitude,
-                    lng: pos.coords.longitude
-                }),
-                (err) => console.warn('Location blocked or unavailable:', err)
-            );
-        }
-    }, []);
+    const { userLocation } = useLocation();
 
     // Filters
     const [selectedCategories, setSelectedCategories] = useState(

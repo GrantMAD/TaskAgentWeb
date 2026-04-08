@@ -22,12 +22,14 @@ import {
 import { taskService } from '../../../services/taskService';
 import { useAuth } from '../../../context/AuthContext';
 import { useToast } from '../../../context/ToastContext';
+import { useLocation } from '../../../context/LocationContext';
 import { TASK_CATEGORIES, CURRENCY_SYMBOL } from '../../../utils/constants';
 
 export default function CreateTask() {
     const router = useRouter();
     const { user } = useAuth();
     const { showToast } = useToast();
+    const { userLocation } = useLocation();
 
     // Form State
     const [title, setTitle] = useState('');
@@ -108,36 +110,29 @@ export default function CreateTask() {
         setSuggestions([]);
     };
 
-    const getCurrentLocation = () => {
+    const getCurrentLocation = async () => {
         setIsLocating(true);
-        if (!navigator.geolocation) {
-            showToast('Geolocation not supported', 'error');
+        if (!userLocation) {
+            showToast('Location not available. Please ensure location permissions are granted.', 'error');
             setIsLocating(false);
             return;
         }
 
-        navigator.geolocation.getCurrentPosition(
-            async (pos) => {
-                const { latitude, longitude } = pos.coords;
-                setLocationCoords({ lat: latitude, lng: longitude });
-                try {
-                    const res = await fetch(`https://photon.komoot.io/reverse?lon=${longitude}&lat=${latitude}`);
-                    const data = await res.json();
-                    if (data.features?.length > 0) {
-                        const f = data.features[0].properties;
-                        setAddress([f.name, f.street, f.city].filter(Boolean).join(', '));
-                    }
-                } catch (err) {
-                    setAddress(`${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
-                } finally {
-                    setIsLocating(false);
-                }
-            },
-            () => {
-                showToast('Permission denied or position unavailable', 'error');
-                setIsLocating(false);
+        const { lat, lng } = userLocation;
+        setLocationCoords({ lat, lng });
+        
+        try {
+            const res = await fetch(`https://photon.komoot.io/reverse?lon=${lng}&lat=${lat}`);
+            const data = await res.json();
+            if (data.features?.length > 0) {
+                const f = data.features[0].properties;
+                setAddress([f.name, f.street, f.city].filter(Boolean).join(', '));
             }
-        );
+        } catch (err) {
+            setAddress(`${lat.toFixed(4)}, ${lng.toFixed(4)}`);
+        } finally {
+            setIsLocating(false);
+        }
     };
 
     const handleSubmit = async (e) => {

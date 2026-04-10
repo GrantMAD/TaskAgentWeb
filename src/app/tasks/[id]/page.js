@@ -39,6 +39,7 @@ import ReportModal from '../../../components/ReportModal';
 import DisputeModal from '../../../components/DisputeModal';
 import ConfirmationModal from '../../../components/ConfirmationModal';
 import Skeleton from '../../../components/Skeleton';
+import TaskMap from '../../../components/TaskMap';
 
 export default function TaskDetail() {
     const { id: taskId } = useParams();
@@ -465,6 +466,21 @@ export default function TaskDetail() {
                                 {task.description}
                             </p>
                         </div>
+
+                        {/* Location Map (Poster/Worker only) */}
+                        {(isPoster || isWorker) && task.location_lat && task.location_lng && (
+                            <section className="space-y-4">
+                                <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-widest ml-1">Task Location</h3>
+                                <div className="h-80 w-full">
+                                    <TaskMap 
+                                        latitude={task.location_lat} 
+                                        longitude={task.location_lng} 
+                                        title={task.title}
+                                        address={task.address}
+                                    />
+                                </div>
+                            </section>
+                        )}
                     </section>
 
                     {/* Task Images */}

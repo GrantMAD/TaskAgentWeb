@@ -81,7 +81,7 @@ export default function MessageBubble({ message, isMine, onDelete, onReport }) {
                     <div className="p-1 mb-1">
                         <Image 
                             src={image_url} 
-                            alt="Shared" 
+                            alt="Shared image" 
                             width={500}
                             height={320}
                             className="w-full h-auto max-h-80 object-cover rounded-[20px] cursor-pointer hover:opacity-95 transition-opacity" 

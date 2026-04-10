@@ -7,14 +7,59 @@ import { TASK_STATUS } from '../utils/constants'
 export const taskService = {
     uploadTaskImage: async (file, userId) => {
         try {
-            const ext = file.name.split('.').pop();
+            // --- IMAGE OPTIMIZATION ---
+            // Create a canvas to resize and compress the image
+            const optimizeImage = (file) => {
+                return new Promise((resolve, reject) => {
+                    const img = new Image();
+                    img.src = URL.createObjectURL(file);
+                    img.onload = () => {
+                        URL.revokeObjectURL(img.src);
+                        const canvas = document.createElement('canvas');
+                        let width = img.width;
+                        let height = img.height;
+
+                        // Target 1200px max dimension (matches mobile)
+                        const MAX_SIZE = 1200;
+                        if (width > height) {
+                            if (width > MAX_SIZE) {
+                                height *= MAX_SIZE / width;
+                                width = MAX_SIZE;
+                            }
+                        } else {
+                            if (height > MAX_SIZE) {
+                                width *= MAX_SIZE / height;
+                                height = MAX_SIZE;
+                            }
+                        }
+
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+
+                        // Export as blob with 0.8 quality (matches mobile)
+                        canvas.toBlob((blob) => {
+                            if (blob) {
+                                resolve(blob);
+                            } else {
+                                reject(new Error('Canvas toBlob failed'));
+                            }
+                        }, 'image/jpeg', 0.8);
+                    };
+                    img.onerror = reject;
+                });
+            };
+
+            const optimizedBlob = await optimizeImage(file);
+            const ext = 'jpg'; // We export as jpeg from canvas
             const fileName = `${userId}/${Date.now()}.${ext}`;
             const filePath = `tasks/${fileName}`;
 
             const { error: uploadError } = await supabase.storage
                 .from('task-media')
-                .upload(filePath, file, {
-                    contentType: file.type
+                .upload(filePath, optimizedBlob, {
+                    contentType: 'image/jpeg'
                 });
 
             if (uploadError) throw uploadError;

@@ -17,7 +17,7 @@ export default function UserAvatar({ user, size = 40, className = "" }) {
             >
                 <Image 
                     src={profile_image} 
-                    alt={name ? `${name}'s profile photo` : 'User profile photo'} 
+                    alt={`${name}'s avatar`} 
                     fill
                     sizes={`${size}px`}
                     className="object-cover transition-transform group-hover:scale-110" 

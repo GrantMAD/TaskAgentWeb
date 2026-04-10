@@ -16,7 +16,7 @@ import {
     ShieldAlert
 } from 'lucide-react';
 import { taskService } from '../services/taskService';
-import { adminService } from '../services/adminService';
+import { profileService } from '../services/profileService';
 import TaskCard from '../components/TaskCard';
 import UserAvatar from '../components/UserAvatar';
 import { TASK_CATEGORIES, NEIGHBOURHOOD_TIPS } from '../utils/constants';
@@ -46,13 +46,13 @@ export default function Home() {
                     await taskService.processRecurringTasks(user.id);
                 }
 
-                const [tasksData, repData] = await Promise.all([
+                const [tasksData, neighboursData] = await Promise.all([
                     taskService.getNearbyTasks(),
-                    adminService.getReputationAnalytics()
+                    profileService.getTopNeighbours(4)
                 ]);
                 
                 setNearbyTasks(tasksData.slice(0, 3));
-                setTopNeighbours(repData.superstars.slice(0, 4));
+                setTopNeighbours(neighboursData);
 
                 if (user?.id) {
                     const [appliedData, disputedData] = await Promise.all([

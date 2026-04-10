@@ -90,7 +90,10 @@ export default function TaskHistory() {
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: i * 0.05 }}
                         >
-                            <TaskCard task={task} />
+                            <TaskCard 
+                                task={task} 
+                                onClick={() => router.push(`/tasks/${task.id}`)}
+                            />
                         </motion.div>
                     ))}
                 </div>

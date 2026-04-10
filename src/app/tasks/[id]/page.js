@@ -5,13 +5,13 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-    MapPin, 
-    Calendar, 
-    Clock, 
-    Heart, 
-    Share2, 
-    Flag, 
+import {
+    MapPin,
+    Calendar,
+    Clock,
+    Heart,
+    Share2,
+    Flag,
     ChevronLeft,
     ChevronRight,
     MessageCircle,
@@ -65,20 +65,20 @@ export default function TaskDetail() {
         message: '',
         confirmText: '',
         type: 'primary',
-        onConfirm: () => {},
+        onConfirm: () => { },
     });
     const [showSuccessBanner, setShowSuccessBanner] = useState(false);
 
     const formatRelativeTime = (dateString) => {
         if (!dateString) return 'recently';
         // Ensure date string is treated as UTC if it doesn't specify a timezone
-        const utcDateString = (dateString.includes('T') && !dateString.endsWith('Z') && !dateString.includes('+')) 
-            ? `${dateString}Z` 
+        const utcDateString = (dateString.includes('T') && !dateString.endsWith('Z') && !dateString.includes('+'))
+            ? `${dateString}Z`
             : dateString;
         const date = new Date(utcDateString);
         const now = new Date();
         const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-        
+
         if (diffInSeconds < 60) return 'just now';
         return formatDistanceToNow(date) + ' ago';
     };
@@ -87,7 +87,7 @@ export default function TaskDetail() {
         try {
             const data = await taskService.getTaskDetails(taskId);
             setTask(data);
-            
+
             if (!data) {
                 setLoading(false);
                 return;
@@ -102,7 +102,7 @@ export default function TaskDetail() {
             } else {
                 setDispute(null);
             }
-            
+
             setIsSaved(savedTaskIds.includes(taskId));
         } catch (error) {
             console.error('Error fetching task details:', error);
@@ -242,7 +242,7 @@ export default function TaskDetail() {
 
         triggerConfirmation({
             title: 'Approve Series Instance?',
-            message: rehire 
+            message: rehire
                 ? `Would you like to re-hire ${workerName} for this task? They will receive an invitation.`
                 : 'This will post the task publicly for anyone to apply.',
             confirmText: rehire ? `Re-hire ${workerName}` : 'Post Publicly',
@@ -266,7 +266,7 @@ export default function TaskDetail() {
     const handleInvitationResponse = async (accept) => {
         triggerConfirmation({
             title: accept ? 'Accept Invitation?' : 'Decline Invitation?',
-            message: accept 
+            message: accept
                 ? 'Are you sure you want to accept this recurring task? You will be assigned immediately.'
                 : 'This task will be posted publicly if you decline. You can still apply later if you change your mind.',
             confirmText: accept ? 'Accept & Start' : 'Decline',
@@ -367,7 +367,7 @@ export default function TaskDetail() {
     return (
         <div className="container mx-auto px-4 py-8 lg:py-12 max-w-6xl">
             {/* Breadcrumbs / Back */}
-            <button 
+            <button
                 onClick={() => router.back()}
                 className="flex items-center gap-2 text-slate-500 hover:text-primary font-bold transition-colors mb-8"
             >
@@ -378,7 +378,7 @@ export default function TaskDetail() {
             {/* Success Banner */}
             <AnimatePresence>
                 {showSuccessBanner && (
-                    <motion.div 
+                    <motion.div
                         initial={{ opacity: 0, y: -20, height: 0 }}
                         animate={{ opacity: 1, y: 0, height: 'auto' }}
                         exit={{ opacity: 0, y: -20, height: 0 }}
@@ -386,7 +386,7 @@ export default function TaskDetail() {
                     >
                         {/* Decorative background circle */}
                         <div className="absolute top-[-50%] right-[-10%] w-64 h-64 bg-white/10 rounded-full blur-3xl pointer-events-none" />
-                        
+
                         <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center shrink-0">
                             <PartyPopper className="w-8 h-8 text-white" />
                         </div>
@@ -395,13 +395,13 @@ export default function TaskDetail() {
                             <p className="font-bold opacity-90">Your neighbour has been notified. Check your messages for updates.</p>
                         </div>
                         <div className="flex gap-3">
-                            <button 
+                            <button
                                 onClick={() => router.push('/feed')}
                                 className="px-6 py-3 bg-white/20 hover:bg-white/30 rounded-2xl font-black transition-colors"
                             >
                                 Browse More
                             </button>
-                            <button 
+                            <button
                                 onClick={() => setShowSuccessBanner(false)}
                                 className="p-3 hover:bg-white/20 rounded-2xl transition-colors"
                             >
@@ -416,14 +416,14 @@ export default function TaskDetail() {
             {task.status === TASK_STATUS.DISPUTED && (
                 <div className="mb-8 p-8 bg-amber-500 rounded-[32px] text-white flex flex-col md:flex-row items-center gap-6 shadow-xl shadow-amber-500/20 relative overflow-hidden">
                     <div className="absolute top-[-50%] right-[-10%] w-64 h-64 bg-white/10 rounded-full blur-3xl pointer-events-none" />
-                    
+
                     <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center shrink-0">
                         <ShieldAlert className="w-8 h-8 text-white" />
                     </div>
                     <div className="flex-1 text-center md:text-left">
                         <h2 className="text-2xl font-black mb-1">Dispute in Progress</h2>
                         <p className="font-bold opacity-90">
-                            {dispute?.raised_by?.id === user?.id 
+                            {dispute?.raised_by?.id === user?.id
                                 ? "You have raised a dispute. An admin will review the details and mediate shortly."
                                 : "A dispute has been raised on this task. An admin is reviewing the situation."}
                         </p>
@@ -439,10 +439,9 @@ export default function TaskDetail() {
                             <span className="px-4 py-1.5 rounded-full text-xs font-black bg-primary/10 text-primary dark:bg-primary/20 dark:text-blue-300 uppercase tracking-widest border border-primary/10">
                                 {task.category}
                             </span>
-                            <span className={`px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest border ${
-                                task.status === 'OPEN' ? 'bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800' :
+                            <span className={`px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest border ${task.status === 'OPEN' ? 'bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800' :
                                 'bg-amber-50 text-amber-600 border-amber-100 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800'
-                            }`}>
+                                }`}>
                                 {task.status.replace('_', ' ')}
                             </span>
                         </div>
@@ -459,7 +458,7 @@ export default function TaskDetail() {
                                 {isPoster || isWorker ? task.address : 'Location shared when hired'}
                             </div>
                         </div>
-                        
+
                         <div className="p-8 bg-slate-50 dark:bg-slate-900 rounded-[32px] border border-slate-100 dark:border-slate-800">
                             <h3 className="text-sm font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Description</h3>
                             <p className="text-lg text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">
@@ -472,9 +471,9 @@ export default function TaskDetail() {
                             <section className="space-y-4">
                                 <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-widest ml-1">Task Location</h3>
                                 <div className="h-80 w-full">
-                                    <TaskMap 
-                                        latitude={task.location_lat} 
-                                        longitude={task.location_lng} 
+                                    <TaskMap
+                                        latitude={task.location_lat}
+                                        longitude={task.location_lng}
                                         title={task.title}
                                         address={task.address}
                                     />
@@ -538,13 +537,13 @@ export default function TaskDetail() {
                                                 </div>
                                             </div>
                                             <div className="flex gap-2">
-                                                <button 
+                                                <button
                                                     onClick={() => handleMessage(app.worker_id)}
                                                     className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-500 hover:text-primary transition-colors"
                                                 >
                                                     <MessageCircle className="w-5 h-5" />
                                                 </button>
-                                                <button 
+                                                <button
                                                     onClick={() => handleHire(app.worker_id)}
                                                     className="px-5 py-2.5 bg-primary text-white rounded-xl text-sm font-black hover:shadow-lg transition-all"
                                                 >
@@ -564,199 +563,203 @@ export default function TaskDetail() {
                 </div>
 
                 {/* Right Column: Interaction Card */}
-                <div className="space-y-8">
-                    {/* Action Card */}
-                    <div className="sticky top-24 p-8 bg-white dark:bg-slate-900 rounded-[40px] shadow-2xl border border-slate-100 dark:border-slate-800 ring-1 ring-slate-100 dark:ring-slate-800">
-                        <div className="flex justify-between items-start mb-8">
-                            <div>
-                                <p className="text-sm font-black text-slate-400 uppercase tracking-widest mb-1">Budget</p>
-                                <p className="text-5xl font-black text-slate-900 dark:text-white">
-                                    {CURRENCY_SYMBOL}{task.payment_amount}
-                                </p>
+                <div className="lg:col-span-1">
+                    <div className="sticky top-24 space-y-8">
+
+                        {/* Action Card */}
+                        <div className="p-8 bg-white dark:bg-slate-900 rounded-[40px] shadow-2xl border border-slate-100 dark:border-slate-800 ring-1 ring-slate-100 dark:ring-slate-800">
+
+                            <div className="flex justify-between items-start mb-8">
+                                <div>
+                                    <p className="text-sm font-black text-slate-400 uppercase tracking-widest mb-1">Budget</p>
+                                    <p className="text-5xl font-black text-slate-900 dark:text-white">
+                                        {CURRENCY_SYMBOL}{task.payment_amount}
+                                    </p>
+                                </div>
+                                <button
+                                    onClick={handleToggleSave}
+                                    className={`p-4 rounded-3xl transition-all border-2 ${isSaved
+                                        ? 'bg-red-50 border-red-100 text-red-500'
+                                        : 'bg-slate-50 dark:bg-slate-800 border-transparent text-slate-400 hover:text-red-500'
+                                        }`}
+                                >
+                                    <Heart className={`w-6 h-6 ${isSaved ? 'fill-red-500' : ''}`} />
+                                </button>
                             </div>
-                            <button 
-                                onClick={handleToggleSave}
-                                className={`p-4 rounded-3xl transition-all border-2 ${
-                                    isSaved 
-                                    ? 'bg-red-50 border-red-100 text-red-500' 
-                                    : 'bg-slate-50 dark:bg-slate-800 border-transparent text-slate-400 hover:text-red-500'
-                                }`}
-                            >
-                                <Heart className={`w-6 h-6 ${isSaved ? 'fill-red-500' : ''}`} />
-                            </button>
-                        </div>
 
-                        <div className="space-y-4">
-                            {/* Role based actions */}
-                            {isPoster && task.status === TASK_STATUS.PENDING_APPROVAL && (
-                                <div className="space-y-3">
-                                    <button 
-                                        onClick={() => handleRecurringApprove(true)}
-                                        className="w-full py-4 bg-premium-gradient text-white rounded-[24px] font-black text-lg shadow-xl hover:scale-[1.02] transition-all flex items-center justify-center gap-2"
-                                    >
-                                        Re-hire Last Tasker
-                                    </button>
-                                    <button 
-                                        onClick={() => handleRecurringApprove(false)}
-                                        className="w-full py-4 bg-white dark:bg-slate-800 text-primary dark:text-white border-2 border-slate-100 dark:border-slate-700 rounded-[24px] font-black text-lg hover:border-primary transition-all"
-                                    >
-                                        Post Publicly
-                                    </button>
-                                </div>
-                            )}
+                            <div className="space-y-4">
 
-                            {isWorker && task.status === TASK_STATUS.INVITED && (
-                                <div className="space-y-3">
-                                    <button 
-                                        onClick={() => handleInvitationResponse(true)}
-                                        className="w-full py-5 bg-premium-gradient text-white rounded-[24px] font-black text-xl shadow-xl hover:scale-[1.02] transition-all"
-                                    >
-                                        Accept & Start
-                                    </button>
-                                    <button 
-                                        onClick={() => handleInvitationResponse(false)}
-                                        className="w-full py-4 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-[24px] font-black text-lg hover:bg-red-100 transition-all border border-red-100 dark:border-red-900/30"
-                                    >
-                                        Decline
-                                    </button>
-                                </div>
-                            )}
-
-                            {task.status === TASK_STATUS.OPEN && !isPoster && !hasApplied && (
-                                <button 
-                                    onClick={() => setShowApplyModal(true)}
-                                    className="w-full py-5 bg-premium-gradient text-white rounded-[24px] font-black text-xl shadow-xl shadow-primary/20 hover:shadow-2xl hover:scale-[1.02] active:scale-95 transition-all"
-                                >
-                                    Apply Now
-                                </button>
-                            )}
-
-                            {task.status === 'OPEN' && hasApplied && (
-                                <div className="space-y-4">
-                                    <div className="w-full py-5 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded-[24px] font-black text-center flex items-center justify-center gap-2 border border-emerald-100 dark:border-emerald-800">
-                                        <CheckCircle2 className="w-6 h-6" />
-                                        Applied Successfully
+                                {/* Role based actions */}
+                                {isPoster && task.status === TASK_STATUS.PENDING_APPROVAL && (
+                                    <div className="space-y-3">
+                                        <button
+                                            onClick={() => handleRecurringApprove(true)}
+                                            className="w-full py-4 bg-premium-gradient text-white rounded-[24px] font-black text-lg shadow-xl hover:scale-[1.02] transition-all flex items-center justify-center gap-2"
+                                        >
+                                            Re-hire Last Tasker
+                                        </button>
+                                        <button
+                                            onClick={() => handleRecurringApprove(false)}
+                                            className="w-full py-4 bg-white dark:bg-slate-800 text-primary dark:text-white border-2 border-slate-100 dark:border-slate-700 rounded-[24px] font-black text-lg hover:border-primary transition-all"
+                                        >
+                                            Post Publicly
+                                        </button>
                                     </div>
-                                    <button 
-                                        onClick={handleCancelApplication}
-                                        className="w-full py-2 group flex items-center justify-center gap-2 text-slate-400 hover:text-red-500 transition-all font-bold text-sm"
+                                )}
+
+                                {isWorker && task.status === TASK_STATUS.INVITED && (
+                                    <div className="space-y-3">
+                                        <button
+                                            onClick={() => handleInvitationResponse(true)}
+                                            className="w-full py-5 bg-premium-gradient text-white rounded-[24px] font-black text-xl shadow-xl hover:scale-[1.02] transition-all"
+                                        >
+                                            Accept & Start
+                                        </button>
+                                        <button
+                                            onClick={() => handleInvitationResponse(false)}
+                                            className="w-full py-4 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-[24px] font-black text-lg hover:bg-red-100 transition-all border border-red-100 dark:border-red-900/30"
+                                        >
+                                            Decline
+                                        </button>
+                                    </div>
+                                )}
+
+                                {task.status === TASK_STATUS.OPEN && !isPoster && !hasApplied && (
+                                    <button
+                                        onClick={() => setShowApplyModal(true)}
+                                        className="w-full py-5 bg-premium-gradient text-white rounded-[24px] font-black text-xl shadow-xl shadow-primary/20 hover:shadow-2xl hover:scale-[1.02] active:scale-95 transition-all"
                                     >
-                                        <X className="w-4 h-4" />
-                                        Withdraw Application
+                                        Apply Now
+                                    </button>
+                                )}
+
+                                {task.status === 'OPEN' && hasApplied && (
+                                    <div className="space-y-4">
+                                        <div className="w-full py-5 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded-[24px] font-black text-center flex items-center justify-center gap-2 border border-emerald-100 dark:border-emerald-800">
+                                            <CheckCircle2 className="w-6 h-6" />
+                                            Applied Successfully
+                                        </div>
+                                        <button
+                                            onClick={handleCancelApplication}
+                                            className="w-full py-2 group flex items-center justify-center gap-2 text-slate-400 hover:text-red-500 transition-all font-bold text-sm"
+                                        >
+                                            <X className="w-4 h-4" />
+                                            Withdraw Application
+                                        </button>
+                                    </div>
+                                )}
+
+                                {isPoster && task.status === 'OPEN' && (
+                                    <Link
+                                        href={`/tasks/${task.id}/edit`}
+                                        className="w-full py-4 px-6 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-2xl font-black text-center transition-all flex items-center justify-center gap-2 mb-3"
+                                    >
+                                        <PencilLine className="w-5 h-5" />
+                                        Edit Task
+                                    </Link>
+                                )}
+
+                                {isPoster && task.status === 'OPEN' && (
+                                    <button
+                                        onClick={handleCancel}
+                                        className="w-full py-5 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-[24px] font-black text-xl hover:bg-red-100 transition-all border border-red-100 dark:border-red-900/30"
+                                    >
+                                        Cancel Task
+                                    </button>
+                                )}
+
+                                {isWorker && task.status === TASK_STATUS.ASSIGNED && (
+                                    <button
+                                        onClick={handleMarkComplete}
+                                        className="w-full py-5 bg-emerald-500 text-white rounded-[24px] font-black text-xl shadow-xl shadow-emerald-500/20 hover:scale-[1.02] transition-all"
+                                    >
+                                        Mark as Complete
+                                    </button>
+                                )}
+
+                                {isPoster && task.status === TASK_STATUS.PENDING_CONFIRMATION && (
+                                    <button
+                                        onClick={handleApprove}
+                                        className="w-full py-5 bg-emerald-500 text-white rounded-[24px] font-black text-xl shadow-xl shadow-emerald-500/20 hover:scale-[1.02] transition-all"
+                                    >
+                                        Approve Completion
+                                    </button>
+                                )}
+
+                                {(isWorker || isPoster) &&
+                                    [TASK_STATUS.ASSIGNED, TASK_STATUS.PENDING_CONFIRMATION].includes(task.status) && (
+                                        <button
+                                            onClick={() => setShowDisputeModal(true)}
+                                            className="w-full py-4 group flex items-center justify-center gap-2 text-slate-400 hover:text-amber-500 transition-all font-bold text-sm"
+                                        >
+                                            <ShieldAlert className="w-4 h-4" />
+                                            Raise a Dispute
+                                        </button>
+                                    )}
+
+                                {!isPoster && (
+                                    <button
+                                        onClick={() => handleMessage(task.poster_id)}
+                                        className="w-full py-4 bg-slate-900 dark:bg-white dark:text-slate-900 text-white rounded-[24px] font-black flex items-center justify-center gap-2 hover:opacity-90 transition-all"
+                                    >
+                                        <MessageCircle className="w-5 h-5" />
+                                        Message Neighbour
+                                    </button>
+                                )}
+
+                                <div className="grid grid-cols-2 gap-3 mt-4">
+                                    <button className="flex items-center justify-center gap-2 py-3 bg-slate-50 dark:bg-slate-800 rounded-2xl text-sm font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-100 transition-all">
+                                        <Share2 className="w-4 h-4" />
+                                        Share
+                                    </button>
+                                    <button
+                                        onClick={() => setShowReportModal(true)}
+                                        className="flex items-center justify-center gap-2 py-3 bg-slate-50 dark:bg-slate-800 rounded-2xl text-sm font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-100 transition-all"
+                                    >
+                                        <Flag className="w-4 h-4" />
+                                        Report
                                     </button>
                                 </div>
-                            )}
 
-                            {isPoster && task.status === 'OPEN' && (
-                                <Link 
-                                    href={`/tasks/${task.id}/edit`}
-                                    className="w-full py-4 px-6 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-2xl font-black text-center transition-all flex items-center justify-center gap-2 mb-3"
-                                >
-                                    <PencilLine className="w-5 h-5" />
-                                    Edit Task
-                                </Link>
-                            )}
-
-                            {isPoster && task.status === 'OPEN' && (
-                                <button 
-                                    onClick={handleCancel}
-                                    className="w-full py-5 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-[24px] font-black text-xl hover:bg-red-100 transition-all border border-red-100 dark:border-red-900/30"
-                                >
-                                    Cancel Task
-                                </button>
-                            )}
-
-                            {isWorker && task.status === TASK_STATUS.ASSIGNED && (
-                                <button 
-                                    onClick={handleMarkComplete}
-                                    className="w-full py-5 bg-emerald-500 text-white rounded-[24px] font-black text-xl shadow-xl shadow-emerald-500/20 hover:scale-[1.02] transition-all"
-                                >
-                                    Mark as Complete
-                                </button>
-                            )}
-
-                            {isPoster && task.status === TASK_STATUS.PENDING_CONFIRMATION && (
-                                <button 
-                                    onClick={handleApprove}
-                                    className="w-full py-5 bg-emerald-500 text-white rounded-[24px] font-black text-xl shadow-xl shadow-emerald-500/20 hover:scale-[1.02] transition-all"
-                                >
-                                    Approve Completion
-                                </button>
-                            )}
-
-                            {/* Dispute Trigger */}
-                            {(isWorker || isPoster) && 
-                             [TASK_STATUS.ASSIGNED, TASK_STATUS.PENDING_CONFIRMATION].includes(task.status) && (
-                                <button 
-                                    onClick={() => setShowDisputeModal(true)}
-                                    className="w-full py-4 group flex items-center justify-center gap-2 text-slate-400 hover:text-amber-500 transition-all font-bold text-sm"
-                                >
-                                    <ShieldAlert className="w-4 h-4" />
-                                    Raise a Dispute
-                                </button>
-                            )}
-
-                            {/* Secondary Actions */}
-                            {!isPoster && (
-                                <button 
-                                    onClick={() => handleMessage(task.poster_id)}
-                                    className="w-full py-4 bg-slate-900 dark:bg-white dark:text-slate-900 text-white rounded-[24px] font-black flex items-center justify-center gap-2 hover:opacity-90 transition-all"
-                                >
-                                    <MessageCircle className="w-5 h-5" />
-                                    Message Neighbour
-                                </button>
-                            )}
-
-                            <div className="grid grid-cols-2 gap-3 mt-4">
-                                <button className="flex items-center justify-center gap-2 py-3 bg-slate-50 dark:bg-slate-800 rounded-2xl text-sm font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-100 transition-all">
-                                    <Share2 className="w-4 h-4" />
-                                    Share
-                                </button>
-                                <button 
-                                    onClick={() => setShowReportModal(true)}
-                                    className="flex items-center justify-center gap-2 py-3 bg-slate-50 dark:bg-slate-800 rounded-2xl text-sm font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-100 transition-all"
-                                >
-                                    <Flag className="w-4 h-4" />
-                                    Report
-                                </button>
                             </div>
                         </div>
 
                         {/* Safety Warning */}
-                        <div className="mt-8 p-4 bg-amber-50 dark:bg-amber-900/20 rounded-2xl border border-amber-100 dark:border-amber-900/30 flex gap-3">
+                        <div className="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-2xl border border-amber-100 dark:border-amber-900/30 flex gap-3">
                             <AlertTriangle className="w-5 h-5 text-amber-500 flex-shrink-0" />
                             <p className="text-xs font-bold text-amber-700 dark:text-amber-400 leading-snug uppercase tracking-tight">
                                 Never pay upfront. Connect in person within the safe community zones.
                             </p>
                         </div>
-                    </div>
 
-                    {/* Neighbour Info */}
-                    <div className="p-8 bg-slate-50 dark:bg-slate-900 rounded-[32px] border border-slate-100 dark:border-slate-800">
-                        <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest mb-6">Posted By</h3>
-                        <div className="flex items-center gap-4">
-                            <div className="relative w-16 h-16 rounded-[24px] bg-premium-gradient overflow-hidden ring-4 ring-white dark:ring-slate-800 shadow-lg shrink-0">
-                                {task.poster?.profile_image ? (
-                                    <Image src={task.poster.profile_image} alt={`${task.poster.name}'s avatar`} fill sizes="64px" className="object-cover" />
-                                ) : (
-                                    <div className="w-full h-full flex items-center justify-center text-2xl text-white font-black">
-                                        {task.poster?.name?.charAt(0)}
-                                    </div>
-                                )}
-                            </div>
-                            <div>
-                                <p className="text-lg font-black text-slate-900 dark:text-white leading-none mb-2">{task.poster?.name}</p>
-                                <div className="flex items-center gap-1 mb-1">
-                                    {[1, 2, 3, 4, 5].map(i => (
-                                        <Star key={i} className={`w-3.5 h-3.5 ${i <= (task.poster?.rating || 5) ? 'fill-amber-400 text-amber-400' : 'text-slate-300'}`} />
-                                    ))}
-                                    <span className="text-xs font-black text-slate-400 ml-1 mt-0.5">({task.poster?.review_count || 0})</span>
+                        {/* Neighbour Info */}
+                        <div className="p-8 bg-slate-50 dark:bg-slate-900 rounded-[32px] border border-slate-100 dark:border-slate-800">
+                            <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest mb-6">Posted By</h3>
+                            <div className="flex items-center gap-4">
+                                <div className="relative w-16 h-16 rounded-[24px] bg-premium-gradient overflow-hidden ring-4 ring-white dark:ring-slate-800 shadow-lg shrink-0">
+                                    {task.poster?.profile_image ? (
+                                        <Image src={task.poster.profile_image} alt={`${task.poster.name}'s avatar`} fill sizes="64px" className="object-cover" />
+                                    ) : (
+                                        <div className="w-full h-full flex items-center justify-center text-2xl text-white font-black">
+                                            {task.poster?.name?.charAt(0)}
+                                        </div>
+                                    )}
                                 </div>
-                                <Link href={`/profile/${task.poster_id}`} className="text-xs font-black text-primary uppercase tracking-widest hover:underline">
-                                    View Profile
-                                </Link>
+                                <div>
+                                    <p className="text-lg font-black text-slate-900 dark:text-white leading-none mb-2">{task.poster?.name}</p>
+                                    <div className="flex items-center gap-1 mb-1">
+                                        {[1, 2, 3, 4, 5].map(i => (
+                                            <Star key={i} className={`w-3.5 h-3.5 ${i <= (task.poster?.rating || 5) ? 'fill-amber-400 text-amber-400' : 'text-slate-300'}`} />
+                                        ))}
+                                        <span className="text-xs font-black text-slate-400 ml-1 mt-0.5">({task.poster?.review_count || 0})</span>
+                                    </div>
+                                    <Link href={`/profile/${task.poster_id}`} className="text-xs font-black text-primary uppercase tracking-widest hover:underline">
+                                        View Profile
+                                    </Link>
+                                </div>
                             </div>
                         </div>
+
                     </div>
                 </div>
             </div>
@@ -765,7 +768,7 @@ export default function TaskDetail() {
             <AnimatePresence>
                 {showApplyModal && (
                     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
-                        <motion.div 
+                        <motion.div
                             initial={{ opacity: 0, scale: 0.9, y: 20 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.9, y: 20 }}
@@ -780,7 +783,7 @@ export default function TaskDetail() {
                             <form onSubmit={handleApply} className="space-y-6">
                                 <div className="space-y-2">
                                     <label className="text-sm font-black text-slate-500 uppercase tracking-widest ml-1">Cover Message</label>
-                                    <textarea 
+                                    <textarea
                                         required
                                         value={applyMessage}
                                         onChange={(e) => setApplyMessage(e.target.value)}
@@ -789,7 +792,7 @@ export default function TaskDetail() {
                                         className="w-full p-4 bg-slate-50 dark:bg-slate-800 border-2 border-transparent focus:border-primary rounded-2xl text-slate-900 dark:text-white font-medium outline-none transition-all resize-none"
                                     />
                                 </div>
-                                <button 
+                                <button
                                     type="submit"
                                     disabled={actionLoading}
                                     className="w-full py-4 bg-premium-gradient text-white rounded-2xl font-black text-lg shadow-xl hover:shadow-2xl transition-all disabled:opacity-50 flex items-center justify-center gap-2"
@@ -801,7 +804,7 @@ export default function TaskDetail() {
                     </div>
                 )}
             </AnimatePresence>
-            <ReportModal 
+            <ReportModal
                 isOpen={showReportModal}
                 onClose={() => setShowReportModal(false)}
                 targetId={taskId}
@@ -809,7 +812,7 @@ export default function TaskDetail() {
                 targetName={task.title}
             />
 
-            <DisputeModal 
+            <DisputeModal
                 isOpen={showDisputeModal}
                 onClose={() => setShowDisputeModal(false)}
                 taskId={taskId}
@@ -818,7 +821,7 @@ export default function TaskDetail() {
                 onDisputeRaised={fetchTaskDetails}
             />
 
-            <ConfirmationModal 
+            <ConfirmationModal
                 isOpen={confirmationConfig.isOpen}
                 title={confirmationConfig.title}
                 message={confirmationConfig.message}

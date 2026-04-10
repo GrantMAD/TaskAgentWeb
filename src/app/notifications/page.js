@@ -60,10 +60,11 @@ export default function Notifications() {
         // Navigation
         switch (item.type) {
             case 'APPLICATION':
+            case 'WITHDRAWAL':
             case 'HIRED':
-            case 'COMPLETED':
             case 'INVITATION_ACCEPTED':
             case 'INVITATION_DECLINED':
+            case 'task_cancelled':
             case 'dispute_raised':
             case 'dispute_resolved':
                 if (item.related_id) router.push(`/tasks/${item.related_id}`);
@@ -71,6 +72,7 @@ export default function Notifications() {
             case 'MESSAGE':
                 if (item.related_id) router.push(`/messages/${item.related_id}`);
                 break;
+            case 'COMPLETED':
             case 'REVIEW':
                 router.push('/profile');
                 break;

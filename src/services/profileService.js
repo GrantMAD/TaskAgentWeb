@@ -134,5 +134,21 @@ export const profileService = {
             monthlyEarnings: last6Months,
             communityImpactScore: (workerCompletedCount || 0) * 10 + (postedCount || 0) * 5 // Arbitrary fun score
         };
+    },
+
+    /**
+     * Get top-rated users for public display (e.g., landing page)
+     * This is a lightweight, public alternative to admin reputation analytics
+     */
+    getTopNeighbours: async (limit = 4) => {
+        const { data, error } = await supabase
+            .from('users')
+            .select('id, name, profile_image, rating, completed_tasks')
+            .gt('completed_tasks', 0)
+            .order('rating', { ascending: false })
+            .limit(limit);
+
+        if (error) throw error;
+        return data;
     }
 }

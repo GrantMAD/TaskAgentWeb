@@ -73,16 +73,21 @@ export default function Navigation() {
 
     const getNotificationLink = (notif) => {
         switch (notif.type) {
-            case 'NEW_APPLICATION':
-            case 'APPLICATION_ACCEPTED':
-            case 'APPLICATION_REJECTED':
+            case 'APPLICATION':
+            case 'WITHDRAWAL':
+            case 'HIRED':
+            case 'RECURRING_APPROVAL':
+            case 'RECURRING_INVITATION':
+            case 'INVITATION_ACCEPTED':
+            case 'INVITATION_DECLINED':
+            case 'task_cancelled':
             case 'dispute_raised':
             case 'dispute_resolved':
                 return `/tasks/${notif.related_id || notif.task_id}`;
-            case 'NEW_MESSAGE':
-                return `/messages/${notif.conversation_id}`;
-            case 'TASK_COMPLETED':
-            case 'REVIEW_RECEIVED':
+            case 'MESSAGE':
+                return `/messages/${notif.related_id || notif.conversation_id}`;
+            case 'COMPLETED':
+            case 'REVIEW':
                 return `/profile`;
             default:
                 return '/notifications';
@@ -131,6 +136,15 @@ export default function Navigation() {
 
                 {/* Actions */}
                 <div className="hidden md:flex items-center gap-4">
+                    {/* Dark Mode Toggle */}
+                    <button 
+                        onClick={toggleTheme}
+                        className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-slate-600 dark:text-slate-400"
+                        title={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
+                    >
+                        {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+                    </button>
+
                     {user ? (
                         <div className="flex items-center gap-4">
                             {/* Notifications Dropdown */}

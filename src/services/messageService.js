@@ -54,7 +54,7 @@ export const messageService = {
                 task:tasks(title)
             `)
             .eq('id', conversationId)
-            .single();
+            .maybeSingle();
         if (error) throw error;
         return data;
     },

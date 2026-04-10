@@ -63,30 +63,40 @@ export default function Chat() {
     }, [conversation, user]);
 
     const fetchChatDetails = useCallback(async () => {
+        if (!user) return;
         try {
             const [conv, msgs] = await Promise.all([
                 messageService.getConversation(conversationId),
                 messageService.getMessages(conversationId, LIMIT, 0)
             ]);
+            
+            if (!conv) {
+                router.push('/messages');
+                return;
+            }
+
             setConversation(conv);
-            setMessages(msgs); // getMessages returns newest last, so we just set it
+            setMessages(msgs);
             setOffset(LIMIT);
             if (msgs.length < LIMIT) setHasMore(false);
             
             // Mark read
-            if (user) {
-                messageService.markMessagesAsRead(conversationId, user.id);
-            }
+            messageService.markMessagesAsRead(conversationId, user.id);
         } catch (error) {
             console.error(error);
             showToast('Could not load chat', 'error');
         } finally {
             setLoading(false);
         }
-    }, [conversationId, user, showToast]);
+    }, [conversationId, user, showToast, router]);
 
     useEffect(() => {
-        fetchChatDetails();
+        if (user) {
+            fetchChatDetails();
+        } else if (!loading) {
+            // If we're not loading and user is gone, we should leave
+            router.push('/login');
+        }
 
         if (!user) return;
 

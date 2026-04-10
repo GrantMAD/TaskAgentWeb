@@ -511,9 +511,218 @@ export const taskService = {
         return data[0];
     },
 
-    processRecurringTasks: async (userId) => {
-        const { error } = await supabase
-            .rpc('process_recurring_tasks', { p_user_id: userId });
+    getMyRecurringTemplates: async (userId) => {
+        const { data, error } = await supabase
+            .from('task_templates')
+            .select('*')
+            .eq('poster_id', userId)
+            .order('created_at', { ascending: false });
         if (error) throw error;
+        return data;
+    },
+
+    updateTaskTemplate: async (templateId, templateData) => {
+        const { data, error } = await supabase
+            .from('task_templates')
+            .update(templateData)
+            .eq('id', templateId)
+            .select();
+        if (error) throw error;
+        return data[0];
+    },
+
+    deleteTaskTemplate: async (templateId) => {
+        const { error } = await supabase
+            .from('task_templates')
+            .delete()
+            .eq('id', templateId);
+        if (error) throw error;
+    },
+
+    calculateNextOccurrence: (frequency, fromDate = new Date()) => {
+        const next = new Date(fromDate);
+        switch (frequency) {
+            case 'daily':
+                next.setDate(next.getDate() + 1);
+                break;
+            case 'weekly':
+                next.setDate(next.getDate() + 7);
+                break;
+            case 'bi-weekly':
+                next.setDate(next.getDate() + 14);
+                break;
+            case 'monthly':
+                next.setMonth(next.getMonth() + 1);
+                break;
+            default:
+                next.setDate(next.getDate() + 7);
+        }
+        return next;
+    },
+
+    processRecurringTasks: async (userId) => {
+        if (!userId) return;
+        try {
+            const now = new Date().toISOString();
+            // Get templates FOR THIS USER where next_occurrence_at is due (lte now) or null (first time)
+            const { data: templates, error: fetchError } = await supabase
+                .from('task_templates')
+                .select('*')
+                .eq('poster_id', userId)
+                .eq('is_active', true)
+                .or(`next_occurrence_at.lte.${now},next_occurrence_at.is.null`)
+
+            if (fetchError) throw fetchError;
+            if (!templates || templates.length === 0) return;
+
+            for (const template of templates) {
+                // Determine if this is the first instance or a recurrence
+                const isFirstInstance = !template.last_generated_at;
+                
+                // Generate the task instance
+                const taskData = {
+                    poster_id: template.poster_id,
+                    title: template.title,
+                    description: template.description,
+                    category: template.category,
+                    payment_amount: template.payment_amount,
+                    address: template.address,
+                    location_lat: template.location_lat,
+                    location_lng: template.location_lng,
+                    image_url: template.image_url,
+                    parent_template_id: template.id,
+                    status: isFirstInstance ? TASK_STATUS.OPEN : TASK_STATUS.PENDING_APPROVAL
+                };
+
+                const { data: newTask, error: insertError } = await supabase
+                    .from('tasks')
+                    .insert([taskData])
+                    .select()
+                    .single();
+
+                if (insertError) {
+                    console.error(`Error generating task for template ${template.id}:`, insertError);
+                    continue;
+                }
+
+                // If it's a recurrence, notify the poster to approve it
+                if (!isFirstInstance) {
+                    await notificationService.createNotification(
+                        template.poster_id,
+                        'Approve Recurring Task',
+                        `Your recurring task "${template.title}" is due. Please approve it to proceed.`,
+                        'RECURRING_APPROVAL',
+                        newTask.id
+                    );
+                }
+
+                // Update template for next run
+                const lastRefDate = template.next_occurrence_at ? new Date(template.next_occurrence_at) : new Date();
+                const nextDate = taskService.calculateNextOccurrence(template.frequency, lastRefDate);
+                
+                // Check if we passed the end_date
+                const isActive = template.end_date ? new Date(nextDate) <= new Date(template.end_date) : true;
+
+                await supabase
+                    .from('task_templates')
+                    .update({
+                        last_generated_at: now,
+                        next_occurrence_at: nextDate.toISOString(),
+                        is_active: isActive
+                    })
+                    .eq('id', template.id);
+            }
+        } catch (error) {
+            console.error('Error processing recurring tasks:', error);
+        }
+    },
+
+    approveRecurringTask: async (taskId, workerId = null) => {
+        const { data: task, error: fetchError } = await supabase
+            .from('tasks')
+            .select('title, poster_id')
+            .eq('id', taskId)
+            .single();
+        
+        if (fetchError) throw fetchError;
+
+        if (workerId) {
+            // Re-hiring the same person
+            const { error } = await supabase
+                .from('tasks')
+                .update({ 
+                    assigned_worker_id: workerId, 
+                    status: TASK_STATUS.INVITED 
+                })
+                .eq('id', taskId);
+            
+            if (error) throw error;
+
+            await notificationService.createNotification(
+                workerId,
+                'Recurring Task Invitation',
+                `You have been invited back for: ${task.title}. Would you like to accept?`,
+                'RECURRING_INVITATION',
+                taskId
+            );
+        } else {
+            // Posting publicly
+            const { error } = await supabase
+                .from('tasks')
+                .update({ 
+                    assigned_worker_id: null, 
+                    status: TASK_STATUS.OPEN 
+                })
+                .eq('id', taskId);
+            
+            if (error) throw error;
+        }
+    },
+
+    respondToRecurringInvitation: async (taskId, accept) => {
+        const { data: task, error: fetchError } = await supabase
+            .from('tasks')
+            .select('title, poster_id, assigned_worker_id')
+            .eq('id', taskId)
+            .single();
+        
+        if (fetchError) throw fetchError;
+
+        if (accept) {
+            // Worker accepted
+            const { error } = await supabase
+                .from('tasks')
+                .update({ status: TASK_STATUS.ASSIGNED })
+                .eq('id', taskId);
+            
+            if (error) throw error;
+
+            await notificationService.createNotification(
+                task.poster_id,
+                'Invitation Accepted',
+                `The worker has accepted your recurring task: ${task.title}`,
+                'INVITATION_ACCEPTED',
+                taskId
+            );
+        } else {
+            // Worker declined - post publicly
+            const { error } = await supabase
+                .from('tasks')
+                .update({ 
+                    assigned_worker_id: null, 
+                    status: TASK_STATUS.OPEN 
+                })
+                .eq('id', taskId);
+            
+            if (error) throw error;
+
+            await notificationService.createNotification(
+                task.poster_id,
+                'Invitation Declined',
+                `The worker declined your recurring task. It is now posted publicly: ${task.title}`,
+                'INVITATION_DECLINED',
+                taskId
+            );
+        }
     }
 }

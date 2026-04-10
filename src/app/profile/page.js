@@ -19,7 +19,8 @@ import {
     Shield,
     Clock,
     ArrowRight,
-    TrendingUp
+    TrendingUp,
+    RefreshCw
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { profileService } from '../../services/profileService';
@@ -48,6 +49,9 @@ export default function Profile() {
     const fetchProfileData = useCallback(async () => {
         if (!user) return;
         try {
+            // Process any pending recurring tasks for this user
+            await taskService.processRecurringTasks(user.id);
+
             const [p, r, rev, hist] = await Promise.all([
                 profileService.getUserProfile(user.id),
                 reliabilityService.getUserReliability(user.id),
@@ -182,6 +186,15 @@ export default function Profile() {
                                     <span className="font-black text-primary">Activity Dashboard</span>
                                 </div>
                                 <ArrowRight className="w-4 h-4 text-primary group-hover:translate-x-1 transition-transform" />
+                            </button>
+                            <button onClick={() => router.push('/profile/recurring')} className="w-full flex items-center justify-between p-4 bg-white dark:bg-slate-800/50 rounded-2xl group transition-all border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-md">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 bg-slate-50 dark:bg-slate-700 rounded-xl">
+                                        <RefreshCw className="w-5 h-5 text-accent" />
+                                    </div>
+                                    <span className="font-black text-slate-700 dark:text-slate-300">Recurring Tasks</span>
+                                </div>
+                                <ArrowRight className="w-4 h-4 text-slate-300 group-hover:translate-x-1 transition-transform" />
                             </button>
                             <button onClick={() => router.push('/tasks/saved')} className="w-full flex items-center justify-between p-4 bg-white dark:bg-slate-800/50 rounded-2xl group transition-all border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-md">
                                 <div className="flex items-center gap-3">

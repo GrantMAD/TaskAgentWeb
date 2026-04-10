@@ -235,6 +235,57 @@ export default function TaskDetail() {
         });
     };
 
+    const handleRecurringApprove = async (rehire = false) => {
+        const workerId = rehire ? task.parent_template?.last_worker_id : null;
+        const workerName = rehire ? task.parent_template?.last_worker_name : 'the public';
+
+        triggerConfirmation({
+            title: 'Approve Series Instance?',
+            message: rehire 
+                ? `Would you like to re-hire ${workerName} for this task? They will receive an invitation.`
+                : 'This will post the task publicly for anyone to apply.',
+            confirmText: rehire ? `Re-hire ${workerName}` : 'Post Publicly',
+            type: 'primary',
+            onConfirm: async () => {
+                setActionLoading(true);
+                try {
+                    await taskService.approveRecurringTask(taskId, workerId);
+                    showToast(rehire ? `Invitation sent to ${workerName}` : 'Task is now live!', 'success');
+                    fetchTaskDetails();
+                    setConfirmationConfig(prev => ({ ...prev, isOpen: false }));
+                } catch (error) {
+                    showToast(error.message, 'error');
+                } finally {
+                    setActionLoading(false);
+                }
+            }
+        });
+    };
+
+    const handleInvitationResponse = async (accept) => {
+        triggerConfirmation({
+            title: accept ? 'Accept Invitation?' : 'Decline Invitation?',
+            message: accept 
+                ? 'Are you sure you want to accept this recurring task? You will be assigned immediately.'
+                : 'This task will be posted publicly if you decline. You can still apply later if you change your mind.',
+            confirmText: accept ? 'Accept & Start' : 'Decline',
+            type: accept ? 'success' : 'danger',
+            onConfirm: async () => {
+                setActionLoading(true);
+                try {
+                    await taskService.respondToRecurringInvitation(taskId, accept);
+                    showToast(accept ? 'Invitation accepted! Get to work!' : 'Invitation declined.', accept ? 'success' : 'info');
+                    fetchTaskDetails();
+                    setConfirmationConfig(prev => ({ ...prev, isOpen: false }));
+                } catch (error) {
+                    showToast(error.message, 'error');
+                } finally {
+                    setActionLoading(false);
+                }
+            }
+        });
+    };
+
     const handleCancel = async () => {
         triggerConfirmation({
             title: 'Cancel Task?',
@@ -521,7 +572,41 @@ export default function TaskDetail() {
 
                         <div className="space-y-4">
                             {/* Role based actions */}
-                            {task.status === 'OPEN' && !isPoster && !hasApplied && (
+                            {isPoster && task.status === TASK_STATUS.PENDING_APPROVAL && (
+                                <div className="space-y-3">
+                                    <button 
+                                        onClick={() => handleRecurringApprove(true)}
+                                        className="w-full py-4 bg-premium-gradient text-white rounded-[24px] font-black text-lg shadow-xl hover:scale-[1.02] transition-all flex items-center justify-center gap-2"
+                                    >
+                                        Re-hire Last Tasker
+                                    </button>
+                                    <button 
+                                        onClick={() => handleRecurringApprove(false)}
+                                        className="w-full py-4 bg-white dark:bg-slate-800 text-primary dark:text-white border-2 border-slate-100 dark:border-slate-700 rounded-[24px] font-black text-lg hover:border-primary transition-all"
+                                    >
+                                        Post Publicly
+                                    </button>
+                                </div>
+                            )}
+
+                            {isWorker && task.status === TASK_STATUS.INVITED && (
+                                <div className="space-y-3">
+                                    <button 
+                                        onClick={() => handleInvitationResponse(true)}
+                                        className="w-full py-5 bg-premium-gradient text-white rounded-[24px] font-black text-xl shadow-xl hover:scale-[1.02] transition-all"
+                                    >
+                                        Accept & Start
+                                    </button>
+                                    <button 
+                                        onClick={() => handleInvitationResponse(false)}
+                                        className="w-full py-4 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-[24px] font-black text-lg hover:bg-red-100 transition-all border border-red-100 dark:border-red-900/30"
+                                    >
+                                        Decline
+                                    </button>
+                                </div>
+                            )}
+
+                            {task.status === TASK_STATUS.OPEN && !isPoster && !hasApplied && (
                                 <button 
                                     onClick={() => setShowApplyModal(true)}
                                     className="w-full py-5 bg-premium-gradient text-white rounded-[24px] font-black text-xl shadow-xl shadow-primary/20 hover:shadow-2xl hover:scale-[1.02] active:scale-95 transition-all"

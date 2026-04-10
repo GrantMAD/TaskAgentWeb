@@ -306,6 +306,39 @@ export default function CreateTask() {
                             </div>
                         </div>
 
+                        {/* Frequency Selection (Shown when recurring is true) */}
+                        <AnimatePresence>
+                            {isRecurring && (
+                                <motion.div 
+                                    initial={{ opacity: 0, height: 0 }}
+                                    animate={{ opacity: 1, height: 'auto' }}
+                                    exit={{ opacity: 0, height: 0 }}
+                                    className="overflow-hidden space-y-3"
+                                >
+                                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Frequency</label>
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                                        {['daily', 'weekly', 'bi-weekly', 'monthly'].map(freq => (
+                                            <button
+                                                key={freq}
+                                                type="button"
+                                                onClick={() => setFrequency(freq)}
+                                                className={`py-3 rounded-2xl border-2 transition-all text-[10px] font-black uppercase ${
+                                                    frequency === freq
+                                                    ? 'bg-accent border-accent text-white shadow-lg'
+                                                    : 'bg-slate-50 dark:bg-slate-800 border-transparent text-slate-400 hover:border-slate-200'
+                                                }`}
+                                            >
+                                                {freq}
+                                            </button>
+                                        ))}
+                                    </div>
+                                    <p className="text-[10px] text-slate-400 font-bold italic ml-1">
+                                        * Tasks will be automatically posted at this interval.
+                                    </p>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+
                         {/* Location */}
                         <div className="space-y-2">
                             <div className="flex justify-between items-center ml-1">

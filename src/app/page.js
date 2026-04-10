@@ -41,6 +41,11 @@ export default function Home() {
     useEffect(() => {
         const fetchData = async () => {
             try {
+                // Process any pending recurring tasks for this user
+                if (user?.id) {
+                    await taskService.processRecurringTasks(user.id);
+                }
+
                 const [tasksData, repData] = await Promise.all([
                     taskService.getNearbyTasks(),
                     adminService.getReputationAnalytics()

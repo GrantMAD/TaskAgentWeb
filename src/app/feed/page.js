@@ -42,6 +42,7 @@ export default function Feed() {
     const [page, setPage] = useState(0);
     const [hasMore, setHasMore] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
+    const [debouncedSearch, setDebouncedSearch] = useState('');
     const [showSavedOnly, setShowSavedOnly] = useState(false);
     const [isFilterOpen, setIsFilterOpen] = useState(false);
     const [activeTab, setActiveTab] = useState('all');
@@ -53,6 +54,14 @@ export default function Feed() {
     );
     const [priceRange, setPriceRange] = useState({ min: '', max: '' });
     const [sortBy, setSortBy] = useState('newest');
+
+    // Debounce search query
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedSearch(searchQuery);
+        }, 500);
+        return () => clearTimeout(timer);
+    }, [searchQuery]);
 
     const fetchTasks = useCallback(async (isLoadMore = false) => {
         if (isLoadMore) {
@@ -91,12 +100,12 @@ export default function Feed() {
             setLoading(false);
             setFetchingMore(false);
         }
-    }, [page, showToast]);
+    }, [page, showToast, user?.id, userLocation?.lat, userLocation?.lng]);
 
     // Initial Load & Filter Changes
     useEffect(() => {
         fetchTasks(false);
-    }, [searchQuery, selectedCategories, priceRange, sortBy, showSavedOnly, activeTab, userLocation]);
+    }, [debouncedSearch, selectedCategories, priceRange, sortBy, showSavedOnly, activeTab, userLocation]);
 
     // Infinite Scroll Observer
     useEffect(() => {
@@ -143,8 +152,8 @@ export default function Feed() {
         }
 
         // 2. Keyword Search
-        if (searchQuery) {
-            const query = searchQuery.toLowerCase();
+        if (debouncedSearch) {
+            const query = debouncedSearch.toLowerCase();
             result = result.filter(t =>
                 t.title.toLowerCase().includes(query) ||
                 t.category?.toLowerCase().includes(query) ||
@@ -176,19 +185,19 @@ export default function Feed() {
         });
 
         return result;
-    }, [allTasks, searchQuery, selectedCategories, priceRange, sortBy, showSavedOnly, savedTaskIds, activeTab, user]);
+    }, [allTasks, debouncedSearch, selectedCategories, priceRange, sortBy, showSavedOnly, savedTaskIds, activeTab, user]);
 
     // Log Interactions
     useEffect(() => {
-        if (!searchQuery && selectedCategories.length === 0) return;
+        if (!debouncedSearch && selectedCategories.length === 0) return;
 
         const timer = setTimeout(() => {
             const category = selectedCategories.length > 0 ? selectedCategories[0] : 'All';
-            interactionService.logSearch(user?.id, category, searchQuery, filteredTasks.length);
+            interactionService.logSearch(user?.id, category, debouncedSearch, filteredTasks.length);
         }, 1500);
 
         return () => clearTimeout(timer);
-    }, [searchQuery, selectedCategories, user?.id, filteredTasks.length]);
+    }, [debouncedSearch, selectedCategories, user?.id, filteredTasks.length]);
 
     const toggleCategory = (cat) => {
         setSelectedCategories(prev =>

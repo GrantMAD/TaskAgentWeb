@@ -789,8 +789,14 @@ export default function TaskDetail() {
                                         onChange={(e) => setApplyMessage(e.target.value)}
                                         placeholder="Briefly explain why you're a good fit for this task..."
                                         rows={4}
+                                        maxLength={500}
                                         className="w-full p-4 bg-slate-50 dark:bg-slate-800 border-2 border-transparent focus:border-primary rounded-2xl text-slate-900 dark:text-white font-medium outline-none transition-all resize-none"
                                     />
+                                    <div className="flex justify-end pr-2">
+                                        <span className={`text-[10px] font-black tracking-widest uppercase ${applyMessage.length >= 500 ? 'text-red-500' : 'text-slate-400'}`}>
+                                            {applyMessage.length}/500 characters
+                                        </span>
+                                    </div>
                                 </div>
                                 <button
                                     type="submit"

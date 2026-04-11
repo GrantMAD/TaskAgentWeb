@@ -3,6 +3,7 @@ import "./globals.css";
 import ClientProviders from "../components/ClientProviders";
 import Navigation from "../components/Navigation";
 import Footer from "../components/Footer";
+import NextTopLoader from 'nextjs-toploader';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -27,6 +28,17 @@ export default function RootLayout({ children }) {
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col transition-colors duration-300">
+        <NextTopLoader 
+          color="#E68A00"
+          initialPosition={0.08}
+          crawlSpeed={200}
+          height={3}
+          crawl={true}
+          showSpinner={false}
+          easing="ease"
+          speed={200}
+          shadow="0 0 10px #E68A00,0 0 5px #E68A00"
+        />
         <ClientProviders>
           <Navigation />
           <main className="flex-grow pt-20">

@@ -148,18 +148,37 @@ export default function TaskDetail() {
             showToast('Please login to apply', 'info');
             return;
         }
-        setActionLoading(true);
+
+        const previousApplications = [...applications];
+        
+        // Optimistic Update
+        setShowApplyModal(false);
+        const tempApplication = {
+            id: `temp-${Date.now()}`,
+            task_id: taskId,
+            worker_id: user.id,
+            message: applyMessage,
+            created_at: new Date().toISOString(),
+            worker: {
+                id: user.id,
+                name: user.user_metadata?.full_name || 'You',
+                profile_image: user.user_metadata?.avatar_url || null,
+                rating: 5.0
+            }
+        };
+        setApplications(prev => [tempApplication, ...prev]);
+        setShowSuccessBanner(true);
+
         try {
             await taskService.applyForTask(taskId, user.id, applyMessage);
             showToast('Application submitted successfully!', 'success');
-            setShowApplyModal(false);
-            setShowSuccessBanner(true);
             fetchTaskDetails();
             window.scrollTo({ top: 0, behavior: 'smooth' });
         } catch (error) {
+            // Rollback
+            setApplications(previousApplications);
+            setShowSuccessBanner(false);
             showToast(error.message, 'error');
-        } finally {
-            setActionLoading(false);
         }
     };
 
@@ -171,22 +190,35 @@ export default function TaskDetail() {
     };
 
     const handleHire = async (workerId) => {
+        const applicant = applications.find(a => a.worker_id === workerId);
+        const workerName = applicant?.worker?.name || 'Neighbour';
+
         triggerConfirmation({
             title: 'Hire Neighbour?',
-            message: 'Are you sure you want to hire this neighbour? Other applicants will be notified.',
+            message: `Are you sure you want to hire ${workerName}? Other applicants will be notified.`,
             confirmText: 'Hire Neighbour',
             type: 'primary',
             onConfirm: async () => {
-                setActionLoading(true);
+                const previousStatus = task.status;
+                const previousWorkerId = task.assigned_worker_id;
+
+                // Optimistic Update
+                setTask(prev => ({ 
+                    ...prev, 
+                    status: TASK_STATUS.ASSIGNED, 
+                    assigned_worker_id: workerId,
+                    worker: applicant?.worker || { name: workerName }
+                }));
+                setConfirmationConfig(prev => ({ ...prev, isOpen: false }));
+
                 try {
                     await taskService.assignWorker(taskId, workerId);
                     showToast('Neighbour hired successfully!', 'success');
                     fetchTaskDetails();
-                    setConfirmationConfig(prev => ({ ...prev, isOpen: false }));
                 } catch (error) {
+                    // Rollback
+                    setTask(prev => ({ ...prev, status: previousStatus, assigned_worker_id: previousWorkerId }));
                     showToast(error.message, 'error');
-                } finally {
-                    setActionLoading(false);
                 }
             }
         });
@@ -199,16 +231,20 @@ export default function TaskDetail() {
             confirmText: 'Submit Work',
             type: 'success',
             onConfirm: async () => {
-                setActionLoading(true);
+                const previousStatus = task.status;
+
+                // Optimistic Update
+                setTask(prev => ({ ...prev, status: TASK_STATUS.PENDING_CONFIRMATION }));
+                setConfirmationConfig(prev => ({ ...prev, isOpen: false }));
+
                 try {
                     await taskService.markTaskComplete(taskId);
                     showToast('Work submitted for approval!', 'success');
                     fetchTaskDetails();
-                    setConfirmationConfig(prev => ({ ...prev, isOpen: false }));
                 } catch (error) {
+                    // Rollback
+                    setTask(prev => ({ ...prev, status: previousStatus }));
                     showToast(error.message, 'error');
-                } finally {
-                    setActionLoading(false);
                 }
             }
         });
@@ -221,16 +257,20 @@ export default function TaskDetail() {
             confirmText: 'Approve & Close',
             type: 'success',
             onConfirm: async () => {
-                setActionLoading(true);
+                const previousStatus = task.status;
+
+                // Optimistic Update
+                setTask(prev => ({ ...prev, status: TASK_STATUS.COMPLETED }));
+                setConfirmationConfig(prev => ({ ...prev, isOpen: false }));
+
                 try {
                     await taskService.confirmCompletion(taskId);
                     showToast('Task completed successfully!', 'success');
                     fetchTaskDetails();
-                    setConfirmationConfig(prev => ({ ...prev, isOpen: false }));
                 } catch (error) {
+                    // Rollback
+                    setTask(prev => ({ ...prev, status: previousStatus }));
                     showToast(error.message, 'error');
-                } finally {
-                    setActionLoading(false);
                 }
             }
         });
@@ -248,12 +288,16 @@ export default function TaskDetail() {
             confirmText: rehire ? `Re-hire ${workerName}` : 'Post Publicly',
             type: 'primary',
             onConfirm: async () => {
+                const previousStatus = task.status;
+
+                // Optimistic Update (just show loading/close modal for now as it's more complex)
+                setConfirmationConfig(prev => ({ ...prev, isOpen: false }));
                 setActionLoading(true);
+
                 try {
                     await taskService.approveRecurringTask(taskId, workerId);
                     showToast(rehire ? `Invitation sent to ${workerName}` : 'Task is now live!', 'success');
                     fetchTaskDetails();
-                    setConfirmationConfig(prev => ({ ...prev, isOpen: false }));
                 } catch (error) {
                     showToast(error.message, 'error');
                 } finally {
@@ -272,16 +316,24 @@ export default function TaskDetail() {
             confirmText: accept ? 'Accept & Start' : 'Decline',
             type: accept ? 'success' : 'danger',
             onConfirm: async () => {
-                setActionLoading(true);
+                const previousStatus = task.status;
+
+                // Optimistic Update
+                if (accept) {
+                    setTask(prev => ({ ...prev, status: TASK_STATUS.ASSIGNED, assigned_worker_id: user.id }));
+                } else {
+                    setTask(prev => ({ ...prev, status: TASK_STATUS.OPEN, assigned_worker_id: null }));
+                }
+                setConfirmationConfig(prev => ({ ...prev, isOpen: false }));
+
                 try {
                     await taskService.respondToRecurringInvitation(taskId, accept);
                     showToast(accept ? 'Invitation accepted! Get to work!' : 'Invitation declined.', accept ? 'success' : 'info');
                     fetchTaskDetails();
-                    setConfirmationConfig(prev => ({ ...prev, isOpen: false }));
                 } catch (error) {
+                    // Rollback
+                    setTask(prev => ({ ...prev, status: previousStatus }));
                     showToast(error.message, 'error');
-                } finally {
-                    setActionLoading(false);
                 }
             }
         });
@@ -294,15 +346,20 @@ export default function TaskDetail() {
             confirmText: 'Yes, Cancel Task',
             type: 'danger',
             onConfirm: async () => {
-                setActionLoading(true);
+                const previousStatus = task.status;
+
+                // Optimistic Update
+                setTask(prev => ({ ...prev, status: TASK_STATUS.CANCELLED }));
+                setConfirmationConfig(prev => ({ ...prev, isOpen: false }));
+
                 try {
                     await taskService.cancelTask(taskId);
                     showToast('Task cancelled', 'info');
                     router.push('/feed');
                 } catch (error) {
+                    // Rollback
+                    setTask(prev => ({ ...prev, status: previousStatus }));
                     showToast(error.message, 'error');
-                } finally {
-                    setActionLoading(false);
                 }
             }
         });
@@ -315,17 +372,21 @@ export default function TaskDetail() {
             confirmText: 'Withdraw Application',
             type: 'danger',
             onConfirm: async () => {
-                setActionLoading(true);
+                const previousApplications = [...applications];
+
+                // Optimistic Update
+                setApplications(prev => prev.filter(app => app.worker_id !== user.id));
+                setShowSuccessBanner(false);
+                setConfirmationConfig(prev => ({ ...prev, isOpen: false }));
+
                 try {
                     await taskService.cancelApplication(taskId, user.id);
                     showToast('Application withdrawn', 'info');
-                    setShowSuccessBanner(false);
                     fetchTaskDetails();
-                    setConfirmationConfig(prev => ({ ...prev, isOpen: false }));
                 } catch (error) {
+                    // Rollback
+                    setApplications(previousApplications);
                     showToast(error.message, 'error');
-                } finally {
-                    setActionLoading(false);
                 }
             }
         });

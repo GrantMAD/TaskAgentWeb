@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Mail, Lock, Eye, EyeOff, ArrowRight, AlertCircle, Loader2 } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, ArrowRight, AlertCircle, Loader2, X } from 'lucide-react';
 import { supabase } from '../../services/supabaseClient';
 import { useToast } from '../../context/ToastContext';
 import { useAuth } from '../../context/AuthContext';
@@ -41,7 +41,11 @@ export default function Login() {
         setLoading(false);
 
         if (error) {
-            showToast(error.message, 'error');
+            if (error.message.includes('Email not confirmed')) {
+                setAuthError('Your email address has not been verified yet. Please check your inbox for the confirmation link.');
+            } else {
+                showToast(error.message, 'error');
+            }
         } else {
             showToast('Welcome back!', 'success');
             router.push('/');

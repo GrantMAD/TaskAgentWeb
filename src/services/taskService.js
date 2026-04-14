@@ -139,7 +139,7 @@ export const taskService = {
     getNearbyTasks: async (userId = null, lat = null, lng = null, limit = 12, offset = 0) => {
         // If we have user coordinates and a user ID, use the smart RPC for distance-aware results
         if (userId && lat && lng) {
-            return taskService.getPersonalizedTasks(userId, lat, lng, limit);
+            return taskService.getPersonalizedTasks(userId, lat, lng, limit, offset);
         }
 
         const { data, error } = await supabase
@@ -228,13 +228,14 @@ export const taskService = {
         return data
     },
 
-    getPersonalizedTasks: async (userId, lat = null, lng = null, limit = 50) => {
+    getPersonalizedTasks: async (userId, lat = null, lng = null, limit = 50, offset = 0) => {
         const { data, error } = await supabase
             .rpc('get_personalized_tasks', {
                 p_user_id: userId,
                 p_lat: lat,
                 p_lng: lng,
-                p_limit: limit
+                p_limit: limit,
+                p_offset: offset
             });
 
         if (error) throw error;

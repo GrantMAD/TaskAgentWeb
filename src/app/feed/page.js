@@ -12,8 +12,11 @@ import {
     Filter,
     Loader2,
     MapPin,
-    Ghost
+    Ghost,
+    LayoutGrid,
+    Map
 } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import { taskService } from '../../services/taskService';
 import { supabase } from '../../services/supabaseClient';
 import { interactionService } from '../../services/interactionService';
@@ -46,6 +49,7 @@ export default function Feed() {
     const [showSavedOnly, setShowSavedOnly] = useState(false);
     const [isFilterOpen, setIsFilterOpen] = useState(false);
     const [activeTab, setActiveTab] = useState('all');
+    const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'map'
     const { userLocation } = useLocation();
 
     // Filters
@@ -139,7 +143,9 @@ export default function Feed() {
 
     // Derived: Filtered and Sorted Tasks
     const filteredTasks = useMemo(() => {
-        let result = [...allTasks];
+        let result = allTasks.filter(t => 
+            typeof t.location_lat === 'number' && typeof t.location_lng === 'number'
+        );
 
         // 0. Tab Filtering
         if (activeTab === 'my_tasks' && user) {
@@ -284,6 +290,15 @@ export default function Feed() {
                         >
                             <Heart className={`w-6 h-6 ${showSavedOnly ? 'fill-white' : ''}`} />
                         </button>
+                        <button
+                            onClick={() => setViewMode(viewMode === 'grid' ? 'map' : 'grid')}
+                            className={`p-3 rounded-2xl font-bold transition-all border-2 ${viewMode === 'map'
+                                ? 'bg-primary text-white border-primary shadow-lg shadow-primary/20'
+                                : 'bg-white dark:bg-slate-900 text-slate-400 border-slate-100 dark:border-slate-800 hover:border-slate-300 shadow-sm'
+                                }`}
+                        >
+                            {viewMode === 'grid' ? <Map className="w-6 h-6" /> : <LayoutGrid className="w-6 h-6" />}
+                        </button>
                     </div>
                 </div>
             </header>
@@ -377,63 +392,87 @@ export default function Feed() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                     <Skeleton variant="TaskCard" count={6} />
                 </div>
-            ) : filteredTasks.length > 0 ? (
-                <div className="pb-20">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-10">
-                        {filteredTasks.map(task => (
-                            <motion.div
-                                key={task.id}
-                                initial={{ opacity: 0, scale: 0.95 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                            >
-                                <TaskCard
-                                    task={task}
-                                    onClick={() => router.push(`/tasks/${task.id}`)}
-                                />
-                            </motion.div>
-                        ))}
-                    </div>
+            ) : viewMode === 'grid' ? (
+                filteredTasks.length > 0 ? (
+                    <div className="pb-20">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-10">
+                            {filteredTasks.map(task => (
+                                <motion.div
+                                    key={task.id}
+                                    initial={{ opacity: 0, scale: 0.95 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                >
+                                    <TaskCard
+                                        task={task}
+                                        onClick={() => router.push(`/tasks/${task.id}`)}
+                                    />
+                                </motion.div>
+                            ))}
+                        </div>
 
-                    {/* Infinite Scroll Sentinel & Loader */}
-                    <div ref={sentinelRef} className="py-10 flex justify-center">
-                        {fetchingMore && (
-                            <div className="flex flex-col items-center gap-2">
-                                <Loader2 className="w-8 h-8 text-primary animate-spin" />
-                                <p className="text-sm font-bold text-slate-400">Loading more tasks...</p>
-                            </div>
-                        )}
-                        {!hasMore && allTasks.length > 0 && (
-                            <p className="text-slate-400 font-bold italic">You've reached the end of the marketplace!</p>
+                        {/* Infinite Scroll Sentinel & Loader */}
+                        <div ref={sentinelRef} className="py-10 flex justify-center">
+                            {fetchingMore && (
+                                <div className="flex flex-col items-center gap-2">
+                                    <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                                    <p className="text-sm font-bold text-slate-400">Loading more tasks...</p>
+                                </div>
+                            )}
+                            {!hasMore && allTasks.length > 0 && (
+                                <p className="text-slate-400 font-bold italic">You've reached the end of the marketplace!</p>
+                            )}
+                        </div>
+                    </div>
+                ) : (
+                    <div className="py-24 text-center bg-slate-50 dark:bg-slate-900 rounded-[48px] border-2 border-dashed border-slate-200 dark:border-slate-800 mx-auto max-w-4xl">
+                        <Ghost className="w-20 h-20 mx-auto text-slate-300 mb-6" />
+                        <h2 className="text-3xl font-black text-slate-800 dark:text-white mb-3">
+                            {activeTab === 'my_tasks' ? "You haven't posted any tasks yet" : "No tasks found"}
+                        </h2>
+                        <p className="text-slate-500 font-medium text-lg max-w-md mx-auto">
+                            {activeTab === 'my_tasks'
+                                ? "Need a hand with something? Post a task and get help from your neighbours!"
+                                : "Try adjusting your filters or search terms to find more opportunities in your neighbourhood."}
+                        </p>
+                        {activeTab === 'my_tasks' ? (
+                            <button
+                                onClick={() => router.push('/tasks/create')}
+                                className="mt-8 px-8 py-3 bg-primary text-white font-bold rounded-2xl shadow-lg hover:shadow-xl transition-all"
+                            >
+                                Post Your First Task
+                            </button>
+                        ) : (
+                            <button
+                                onClick={clearFilters}
+                                className="mt-8 px-8 py-3 bg-primary text-white font-bold rounded-2xl shadow-lg hover:shadow-xl transition-all"
+                            >
+                                Clear Filters
+                            </button>
                         )}
                     </div>
-                </div>
+                )
             ) : (
-                <div className="py-24 text-center bg-slate-50 dark:bg-slate-900 rounded-[48px] border-2 border-dashed border-slate-200 dark:border-slate-800 mx-auto max-w-4xl">
-                    <Ghost className="w-20 h-20 mx-auto text-slate-300 mb-6" />
-                    <h2 className="text-3xl font-black text-slate-800 dark:text-white mb-3">
-                        {activeTab === 'my_tasks' ? "You haven't posted any tasks yet" : "No tasks found"}
-                    </h2>
-                    <p className="text-slate-500 font-medium text-lg max-w-md mx-auto">
-                        {activeTab === 'my_tasks'
-                            ? "Need a hand with something? Post a task and get help from your neighbours!"
-                            : "Try adjusting your filters or search terms to find more opportunities in your neighbourhood."}
-                    </p>
-                    {activeTab === 'my_tasks' ? (
-                        <button
-                            onClick={() => router.push('/tasks/create')}
-                            className="mt-8 px-8 py-3 bg-primary text-white font-bold rounded-2xl shadow-lg hover:shadow-xl transition-all"
-                        >
-                            Post Your First Task
-                        </button>
-                    ) : (
-                        <button
-                            onClick={clearFilters}
-                            className="mt-8 px-8 py-3 bg-primary text-white font-bold rounded-2xl shadow-lg hover:shadow-xl transition-all"
-                        >
-                            Clear Filters
-                        </button>
-                    )}
+                <div className="h-[700px] rounded-[48px] overflow-hidden border-2 border-slate-100 dark:border-slate-800 shadow-2xl relative">
+                    <TaskMapFeed 
+                        tasks={filteredTasks}
+                        userLocation={userLocation}
+                        theme="light"
+                    />
                 </div>
-            )}        </div>
+            )}
+        </div>
     );
 }
+
+// Dynamic Import for TaskMapFeed to handle SSR
+const TaskMapFeed = dynamic(() => import('../../components/TaskMapFeed'), {
+    ssr: false,
+    loading: () => (
+        <div className="w-full h-full flex items-center justify-center bg-slate-50 dark:bg-slate-900 animate-pulse">
+            <div className="text-center">
+                <Loader2 className="w-12 h-12 text-primary animate-spin mx-auto mb-4" />
+                <p className="text-lg font-black text-slate-900 dark:text-white">Initializing Map Experience...</p>
+            </div>
+        </div>
+    )
+});

@@ -18,6 +18,19 @@ const geistMono = Geist_Mono({
 export const metadata = {
   title: "Task Marketplace | Neighbourhood Help",
   description: "A premium marketplace for neighbourhood tasks and help.",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Task Marketplace",
+  },
+  formatDetection: {
+    telephone: false,
+  },
+};
+
+export const viewport = {
+  themeColor: "#E68A00",
 };
 
 export default function RootLayout({ children }) {

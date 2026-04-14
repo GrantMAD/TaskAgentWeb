@@ -13,7 +13,7 @@ export default function UserAvatar({ user, size = 40, className = "" }) {
         return (
             <div 
                 className={`shrink-0 overflow-hidden relative group ${className}`} 
-                style={{ width: size, height: size, borderRadius: size / 2.5 }}
+                style={{ width: size, height: size, borderRadius: size / 2.5, position: 'relative' }}
             >
                 <Image 
                     src={profile_image} 

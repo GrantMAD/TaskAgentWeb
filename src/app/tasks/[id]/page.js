@@ -24,7 +24,8 @@ import {
     Star,
     PartyPopper,
     PencilLine,
-    ShieldAlert
+    ShieldAlert,
+    Flame
 } from 'lucide-react';
 import { taskService } from '../../../services/taskService';
 import { messageService } from '../../../services/messageService';
@@ -500,6 +501,12 @@ export default function TaskDetail() {
                             <span className="px-4 py-1.5 rounded-full text-xs font-black bg-primary/10 text-primary dark:bg-primary/20 dark:text-blue-300 uppercase tracking-widest border border-primary/10">
                                 {task.category}
                             </span>
+                            {task.is_urgent && (
+                                <span className="inline-flex items-center gap-1 px-4 py-1.5 rounded-full text-xs font-black bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400 border border-red-200 dark:border-red-800 animate-pulse">
+                                    <Flame className="w-3 h-3 fill-current" />
+                                    URGENT TASK
+                                </span>
+                            )}
                             <span className={`px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest border ${task.status === 'OPEN' ? 'bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800' :
                                 'bg-amber-50 text-amber-600 border-amber-100 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800'
                                 }`}>
@@ -514,6 +521,12 @@ export default function TaskDetail() {
                                 <Clock className="w-5 h-5 text-accent" />
                                 Posted {formatRelativeTime(task.created_at)}
                             </div>
+                            {task.deadline && (
+                                <div className="flex items-center gap-2">
+                                    <Clock className="w-5 h-5 text-red-500" />
+                                    Deadline: {new Date(task.deadline).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                </div>
+                            )}
                             <div className="flex items-center gap-2">
                                 <MapPin className="w-5 h-5 text-accent" />
                                 {isPoster || isWorker ? task.address : 'Location shared when hired'}

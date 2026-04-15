@@ -41,6 +41,8 @@ export default function EditTask() {
     const [existingImageUrl, setExistingImageUrl] = useState(null);
     
     // Advanced State
+    const [deadline, setDeadline] = useState('');
+    const [isUrgent, setIsUrgent] = useState(false);
     const [locationCoords, setLocationCoords] = useState({ lat: null, lng: null });
 
     // UI/Logic State
@@ -74,6 +76,8 @@ export default function EditTask() {
             setAddress(task.address);
             setDescription(task.description);
             setExistingImageUrl(task.image_url);
+            setDeadline(task.deadline ? task.deadline.substring(0, 16) : '');
+            setIsUrgent(task.is_urgent || false);
             setLocationCoords({ lat: task.location_lat, lng: task.location_lng });
             
         } catch (error) {
@@ -207,7 +211,9 @@ export default function EditTask() {
                 address,
                 location_lat: locationCoords.lat,
                 location_lng: locationCoords.lng,
-                image_url: imageUrl
+                image_url: imageUrl,
+                deadline: deadline || null,
+                is_urgent: isUrgent
             };
 
             await taskService.updateTask(taskId, taskData);
@@ -329,6 +335,38 @@ export default function EditTask() {
                                         </p>
                                     )}
                                 </div>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {/* Deadline */}
+                            <div className="space-y-2">
+                                <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Deadline (Optional)</label>
+                                <div className="relative">
+                                    <input 
+                                        type="datetime-local"
+                                        value={deadline}
+                                        onChange={(e) => setDeadline(e.target.value)}
+                                        className="w-full pl-6 pr-6 py-4 bg-slate-50 dark:bg-slate-800 border-2 border-transparent focus:border-primary rounded-2xl text-slate-900 dark:text-white font-bold outline-none transition-all shadow-inner [color-scheme:light] dark:[color-scheme:dark]"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Urgency */}
+                            <div className="space-y-2">
+                                <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Urgency</label>
+                                <button 
+                                    type="button"
+                                    onClick={() => setIsUrgent(!isUrgent)}
+                                    className={`w-full py-4 rounded-2xl border-2 transition-all flex items-center justify-center gap-2 font-black text-xs uppercase ${
+                                        isUrgent 
+                                        ? 'bg-red-500 border-red-500 text-white shadow-lg' 
+                                        : 'bg-slate-50 dark:bg-slate-800 border-transparent text-slate-400 hover:border-slate-200'
+                                    }`}
+                                >
+                                    <Clock className={`w-4 h-4 ${isUrgent ? 'animate-pulse' : ''}`} />
+                                    {isUrgent ? 'Urgent Task' : 'Normal Priority'}
+                                </button>
                             </div>
                         </div>
 

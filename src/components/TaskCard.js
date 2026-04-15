@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react';
-import { MapPin, Heart, Repeat, ChevronRight } from 'lucide-react';
+import { MapPin, Heart, Repeat, ChevronRight, Flame, Clock } from 'lucide-react';
 import Image from 'next/image';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
@@ -21,6 +21,17 @@ export default function TaskCard({ task, onClick }) {
         showToast(wasSaved ? 'Removed from saved tasks' : 'Task saved successfully!', 'success');
     };
 
+    const formatDeadline = (dateStr) => {
+        if (!dateStr) return null;
+        const date = new Date(dateStr);
+        return date.toLocaleDateString(undefined, { 
+            month: 'short', 
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    };
+
     return (
         <div 
             onClick={onClick}
@@ -28,6 +39,11 @@ export default function TaskCard({ task, onClick }) {
         >
             {/* Background Accent */}
             <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 dark:bg-primary/10 rounded-full blur-3xl -mr-16 -mt-16 group-hover:bg-primary/10 transition-colors" />
+
+            {/* Urgency Overlay for premium feel */}
+            {task.is_urgent && (
+                <div className="absolute top-0 left-0 w-full h-1 bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)] z-10" />
+            )}
 
             <div className="relative flex justify-between items-start mb-4">
                 <div className="flex-1 mr-4">
@@ -38,6 +54,12 @@ export default function TaskCard({ task, onClick }) {
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-primary/10 text-primary dark:bg-primary/20 dark:text-blue-300 uppercase tracking-wider">
                             {task.category}
                         </span>
+                        {task.is_urgent && (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-black bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400 border border-red-200 dark:border-red-800 animate-pulse">
+                                <Flame className="w-3 h-3 fill-current" />
+                                URGENT
+                            </span>
+                        )}
                         {isOwner && (
                             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-black bg-indigo-500 text-white uppercase tracking-tighter shadow-sm">
                                 YOUR TASK
@@ -66,11 +88,21 @@ export default function TaskCard({ task, onClick }) {
                 </div>
             </div>
 
-            <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 mb-6">
-                <MapPin className="w-4 h-4 text-accent" />
-                <span className="text-sm font-medium italic">
-                    {task.address || 'Location shared when hired'}
-                </span>
+            <div className="flex flex-col gap-2 mb-6">
+                <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
+                    <MapPin className="w-4 h-4 text-accent" />
+                    <span className="text-sm font-medium italic">
+                        {task.address || 'Location shared when hired'}
+                    </span>
+                </div>
+                {task.deadline && (
+                    <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
+                        <Clock className="w-4 h-4 text-primary" />
+                        <span className="text-xs font-bold">
+                            Due: {formatDeadline(task.deadline)}
+                        </span>
+                    </div>
+                )}
             </div>
 
             <div className="flex items-center justify-between mt-auto pt-4 border-t border-slate-50 dark:border-slate-800">

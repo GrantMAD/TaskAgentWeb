@@ -312,7 +312,7 @@ export default function TaskDetail() {
         triggerConfirmation({
             title: accept ? 'Accept Invitation?' : 'Decline Invitation?',
             message: accept
-                ? 'Are you sure you want to accept this recurring task? You will be assigned immediately.'
+                ? 'Are you sure you want to accept this task? You will be assigned immediately.'
                 : 'This task will be posted publicly if you decline. You can still apply later if you change your mind.',
             confirmText: accept ? 'Accept & Start' : 'Decline',
             type: accept ? 'success' : 'danger',
@@ -328,7 +328,7 @@ export default function TaskDetail() {
                 setConfirmationConfig(prev => ({ ...prev, isOpen: false }));
 
                 try {
-                    await taskService.respondToRecurringInvitation(taskId, accept);
+                    await taskService.respondToInvitation(taskId, accept);
                     showToast(accept ? 'Invitation accepted! Get to work!' : 'Invitation declined.', accept ? 'success' : 'info');
                     fetchTaskDetails();
                 } catch (error) {

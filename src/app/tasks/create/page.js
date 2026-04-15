@@ -17,7 +17,9 @@ import {
     Plus,
     Infinity,
     BarChart3,
-    Clock
+    Clock,
+    Users,
+    Check
 } from 'lucide-react';
 import { taskService } from '../../../services/taskService';
 import { useAuth } from '../../../context/AuthContext';
@@ -53,6 +55,9 @@ export default function CreateTask() {
     const [priceEstimate, setPriceEstimate] = useState(null);
     const [isEstimating, setIsEstimating] = useState(false);
     const [suggestions, setSuggestions] = useState([]);
+    const [pastTaskers, setPastTaskers] = useState([]);
+    const [invitedWorkerId, setInvitedWorkerId] = useState(null);
+    const [isLoadingTaskers, setIsLoadingTaskers] = useState(false);
 
     // Price Estimation logic
     useEffect(() => {
@@ -73,6 +78,23 @@ export default function CreateTask() {
         };
         fetchEstimate();
     }, [category]);
+
+    // Fetch past taskers
+    useEffect(() => {
+        if (!user) return;
+        const fetchTaskers = async () => {
+            setIsLoadingTaskers(true);
+            try {
+                const taskers = await taskService.getPastTaskers(user.id);
+                setPastTaskers(taskers);
+            } catch (err) {
+                console.warn('Error fetching taskers:', err);
+            } finally {
+                setIsLoadingTaskers(false);
+            }
+        };
+        fetchTaskers();
+    }, [user]);
 
     const handleImageChange = (e) => {
         const file = e.target.files[0];
@@ -162,7 +184,8 @@ export default function CreateTask() {
                 location_lng: locationCoords.lng,
                 image_url: imageUrl,
                 deadline: deadline || null,
-                is_urgent: isUrgent
+                is_urgent: isUrgent,
+                assigned_worker_id: invitedWorkerId
             };
 
             if (isRecurring) {
@@ -309,6 +332,61 @@ export default function CreateTask() {
                                 </div>
                             </div>
                         </div>
+
+                        {/* Invite Past Taskers */}
+                        {pastTaskers.length > 0 && (
+                            <div className="space-y-3">
+                                <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Invite a previous tasker?</label>
+                                <div className="flex gap-3 overflow-x-auto pb-4 -mx-1 px-1 scrollbar-hide">
+                                    <button
+                                        type="button"
+                                        onClick={() => setInvitedWorkerId(null)}
+                                        className={`flex-shrink-0 flex flex-col items-center gap-2 p-3 rounded-2xl border-2 transition-all w-24 ${
+                                            !invitedWorkerId 
+                                            ? 'bg-primary/5 border-primary text-primary' 
+                                            : 'bg-slate-50 dark:bg-slate-800 border-transparent text-slate-400'
+                                        }`}
+                                    >
+                                        <div className="w-10 h-10 rounded-xl bg-slate-200 dark:bg-slate-700 flex items-center justify-center">
+                                            <Users className="w-5 h-5" />
+                                        </div>
+                                        <span className="text-[10px] font-black uppercase text-center truncate w-full">Public</span>
+                                    </button>
+
+                                    {pastTaskers.map(tasker => (
+                                        <button
+                                            key={tasker.id}
+                                            type="button"
+                                            onClick={() => setInvitedWorkerId(tasker.id)}
+                                            className={`flex-shrink-0 flex flex-col items-center gap-2 p-3 rounded-2xl border-2 transition-all w-24 ${
+                                                invitedWorkerId === tasker.id 
+                                                ? 'bg-primary/5 border-primary text-primary shadow-lg shadow-primary/10' 
+                                                : 'bg-slate-50 dark:bg-slate-800 border-transparent text-slate-400'
+                                            }`}
+                                        >
+                                            <div className="relative w-10 h-10 rounded-xl overflow-hidden bg-slate-200">
+                                                {tasker.profile_image ? (
+                                                    <Image src={tasker.profile_image} alt={tasker.name} fill className="object-cover" />
+                                                ) : (
+                                                    <div className="w-full h-full flex items-center justify-center font-bold text-slate-400">
+                                                        {tasker.name.charAt(0)}
+                                                    </div>
+                                                )}
+                                                {invitedWorkerId === tasker.id && (
+                                                    <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
+                                                        <Check className="w-5 h-5 text-primary stroke-[3px]" />
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <span className="text-[10px] font-black uppercase text-center truncate w-full">{tasker.name.split(' ')[0]}</span>
+                                        </button>
+                                    ))}
+                                </div>
+                                <p className="text-[10px] text-slate-400 font-bold italic ml-1">
+                                    * Selecting a tasker will create a private invitation.
+                                </p>
+                            </div>
+                        )}
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             {/* Deadline */}

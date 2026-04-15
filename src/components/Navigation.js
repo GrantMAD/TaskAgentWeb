@@ -80,6 +80,7 @@ export default function Navigation() {
             case 'RECURRING_INVITATION':
             case 'INVITATION_ACCEPTED':
             case 'INVITATION_DECLINED':
+            case 'TASK_INVITATION':
             case 'task_cancelled':
             case 'dispute_raised':
             case 'dispute_resolved':

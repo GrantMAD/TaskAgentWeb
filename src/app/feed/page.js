@@ -26,6 +26,7 @@ import { useToast } from '../../context/ToastContext';
 import { useLocation } from '../../context/LocationContext';
 import { TASK_CATEGORIES, CURRENCY_SYMBOL } from '../../utils/constants';
 import Skeleton from '../../components/Skeleton';
+import DiscoverySidebar from '../../components/DiscoverySidebar';
 
 const ITEMS_PER_PAGE = 12;
 
@@ -49,7 +50,8 @@ export default function Feed() {
     const [showSavedOnly, setShowSavedOnly] = useState(false);
     const [isFilterOpen, setIsFilterOpen] = useState(false);
     const [activeTab, setActiveTab] = useState('all');
-    const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'map'
+    const [viewMode, setViewMode] = useState('map'); // Always 'map' in the new canvas UI
+    const [isSidebarOpen, setIsSidebarOpen] = useState(true);
     const { userLocation } = useLocation();
 
     // Filters
@@ -220,246 +222,160 @@ export default function Feed() {
     };
 
     return (
-        <div className="container mx-auto px-4 py-8">
-            <header className="mb-10">
-                <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
-                    <div>
-                        <h1 className="text-4xl font-black text-slate-900 dark:text-white mb-2">Marketplace</h1>
-                        <p className="text-slate-500 dark:text-slate-400 font-medium">Find help or browse opportunities in your neighbourhood.</p>
-                    </div>
+        <div className="relative w-screen h-[calc(100vh-64px)] overflow-hidden bg-slate-50 dark:bg-slate-950">
+            {/* 1. THE CANVAS (Background) */}
+            <div className="absolute inset-0 z-0">
+                <TaskMapFeed 
+                    tasks={filteredTasks}
+                    userLocation={userLocation}
+                    theme="light" // Will detect dark mode via CSS global styles
+                />
+            </div>
 
-                    {user && (
-                        <div className="flex p-1.5 bg-slate-100 dark:bg-slate-900 rounded-2xl w-fit">
-                            <button
-                                onClick={() => setActiveTab('all')}
-                                className={`px-6 py-2.5 rounded-xl text-sm font-black transition-all ${activeTab === 'all'
-                                        ? 'bg-white dark:bg-slate-800 text-primary shadow-sm'
-                                        : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
-                                    }`}
-                            >
-                                All Tasks
-                            </button>
-                            <button
-                                onClick={() => setActiveTab('my_tasks')}
-                                className={`px-6 py-2.5 rounded-xl text-sm font-black transition-all ${activeTab === 'my_tasks'
-                                        ? 'bg-white dark:bg-slate-800 text-primary shadow-sm'
-                                        : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
-                                    }`}
-                            >
-                                Your Tasks
-                            </button>
-                        </div>
-                    )}
-                </div>
-
-                <div className="flex flex-col md:flex-row gap-4">
-                    {/* Search Bar */}
+            {/* 2. FLOATING HEADER (Overlays) */}
+            <div className="absolute top-6 left-1/2 -translate-x-1/2 z-[1003] w-full max-w-2xl px-4 pointer-events-none">
+                <div className="glass shadow-2xl rounded-3xl p-2 flex items-center gap-2 pointer-events-auto">
                     <div className="flex-grow relative group">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-primary transition-colors" />
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-primary transition-colors" />
                         <input
                             type="text"
-                            placeholder="Find your next task..."
+                            placeholder="Search area..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full pl-12 pr-4 py-3 bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 focus:border-primary dark:focus:border-accent rounded-2xl text-slate-900 dark:text-white font-medium outline-none transition-all shadow-sm"
+                            className="w-full pl-10 pr-4 py-2.5 bg-transparent text-slate-900 dark:text-white font-bold text-sm outline-none"
                         />
                     </div>
-                    {/* Filter Toggle */}
-                    <div className="flex gap-2">
+                    
+                    <div className="flex items-center gap-1 border-l border-white/10 pl-2">
                         <button
                             onClick={() => setIsFilterOpen(!isFilterOpen)}
-                            className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-bold transition-all border-2 ${isFilterOpen || selectedCategories.length > 0 || priceRange.min || priceRange.max
-                                ? 'bg-primary text-white border-primary shadow-lg shadow-primary/20'
-                                : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border-slate-100 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-600 shadow-sm'
-                                }`}
+                            className={`p-2.5 rounded-2xl transition-all ${
+                                isFilterOpen || selectedCategories.length > 0 || priceRange.min || priceRange.max
+                                ? 'bg-primary text-white'
+                                : 'text-slate-400 hover:text-primary'
+                            }`}
                         >
                             <SlidersHorizontal className="w-5 h-5" />
-                            Filters
-                            {(selectedCategories.length > 0 || priceRange.min || priceRange.max) && (
-                                <span className="ml-1 w-5 h-5 rounded-full bg-accent text-white text-[10px] flex items-center justify-center">
-                                    {(selectedCategories.length > 0 ? 1 : 0) + (priceRange.min || priceRange.max ? 1 : 0)}
-                                </span>
-                            )}
                         </button>
+                        
                         <button
                             onClick={() => setShowSavedOnly(!showSavedOnly)}
-                            className={`p-3 rounded-2xl font-bold transition-all border-2 ${showSavedOnly
-                                ? 'bg-red-500 text-white border-red-500 shadow-lg shadow-red-500/20'
-                                : 'bg-white dark:bg-slate-900 text-slate-400 border-slate-100 dark:border-slate-800 hover:border-slate-300 shadow-sm'
-                                }`}
+                            className={`p-2.5 rounded-2xl transition-all ${
+                                showSavedOnly
+                                ? 'bg-red-500 text-white'
+                                : 'text-slate-400 hover:text-red-500'
+                            }`}
                         >
-                            <Heart className={`w-6 h-6 ${showSavedOnly ? 'fill-white' : ''}`} />
-                        </button>
-                        <button
-                            onClick={() => setViewMode(viewMode === 'grid' ? 'map' : 'grid')}
-                            className={`p-3 rounded-2xl font-bold transition-all border-2 ${viewMode === 'map'
-                                ? 'bg-primary text-white border-primary shadow-lg shadow-primary/20'
-                                : 'bg-white dark:bg-slate-900 text-slate-400 border-slate-100 dark:border-slate-800 hover:border-slate-300 shadow-sm'
-                                }`}
-                        >
-                            {viewMode === 'grid' ? <Map className="w-6 h-6" /> : <LayoutGrid className="w-6 h-6" />}
+                            <Heart className={`w-5 h-5 ${showSavedOnly ? 'fill-current' : ''}`} />
                         </button>
                     </div>
                 </div>
-            </header>
 
-            <AnimatePresence>
-                {isFilterOpen && (
-                    <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: 'auto', opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        className="overflow-hidden mb-8"
-                    >
-                        <div className="p-8 bg-slate-50 dark:bg-slate-900/50 rounded-[32px] border border-slate-200 dark:border-slate-800 grid grid-cols-1 md:grid-cols-3 gap-10">
-                            {/* Categories */}
-                            <div>
-                                <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-widest mb-4">Categories</h3>
-                                <div className="flex flex-wrap gap-2">
-                                    {TASK_CATEGORIES.map(cat => (
-                                        <button
-                                            key={cat.value}
-                                            onClick={() => toggleCategory(cat.value)}
-                                            className={`px-3 py-1.5 rounded-xl text-xs font-bold border-2 transition-all ${selectedCategories.includes(cat.value)
-                                                ? 'bg-primary text-white border-primary'
-                                                : 'bg-white dark:bg-slate-800 text-slate-500 border-transparent hover:border-slate-200'
+                {/* Inline Filters Expansion */}
+                <AnimatePresence>
+                    {isFilterOpen && (
+                        <motion.div
+                            initial={{ y: -20, opacity: 0 }}
+                            animate={{ y: 8, opacity: 1 }}
+                            exit={{ y: -20, opacity: 0 }}
+                            className="glass shadow-2xl rounded-3xl p-6 border border-white/10 pointer-events-auto overflow-hidden max-h-[400px] overflow-y-auto custom-scrollbar"
+                        >
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                <div>
+                                    <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Categories</h3>
+                                    <div className="flex flex-wrap gap-1.5">
+                                        {TASK_CATEGORIES.map(cat => (
+                                            <button
+                                                key={cat.value}
+                                                onClick={() => toggleCategory(cat.value)}
+                                                className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase transition-all ${
+                                                    selectedCategories.includes(cat.value)
+                                                    ? 'bg-primary text-white'
+                                                    : 'bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200'
                                                 }`}
-                                        >
-                                            {cat.label}
+                                            >
+                                                {cat.label}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                                
+                                <div className="space-y-6">
+                                    <div>
+                                        <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Price Range</h3>
+                                        <div className="flex items-center gap-2">
+                                            <input
+                                                type="number"
+                                                placeholder="Min"
+                                                value={priceRange.min}
+                                                onChange={(e) => setPriceRange({...priceRange, min: e.target.value})}
+                                                className="w-full bg-slate-100 dark:bg-slate-800 rounded-xl px-3 py-2 text-xs font-bold outline-none"
+                                            />
+                                            <span className="text-slate-400 font-bold">to</span>
+                                            <input
+                                                type="number"
+                                                placeholder="Max"
+                                                value={priceRange.max}
+                                                onChange={(e) => setPriceRange({...priceRange, max: e.target.value})}
+                                                className="w-full bg-slate-100 dark:bg-slate-800 rounded-xl px-3 py-2 text-xs font-bold outline-none"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center justify-between pt-4 border-t border-white/5">
+                                        <button onClick={clearFilters} className="text-[10px] font-black text-accent uppercase tracking-widest hover:underline">
+                                            Reset
                                         </button>
-                                    ))}
+                                        <select
+                                            value={sortBy}
+                                            onChange={(e) => setSortBy(e.target.value)}
+                                            className="bg-transparent text-[10px] font-black text-slate-500 uppercase outline-none cursor-pointer"
+                                        >
+                                            <option value="newest">Newest</option>
+                                            <option value="price_desc">High Price</option>
+                                            <option value="price_asc">Low Price</option>
+                                        </select>
+                                    </div>
                                 </div>
                             </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+            </div>
 
-                            {/* Price Range */}
-                            <div>
-                                <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-widest mb-4">Price Range ({CURRENCY_SYMBOL})</h3>
-                                <div className="flex items-center gap-3">
-                                    <input
-                                        type="number"
-                                        min="0"
-                                        placeholder="Min"
-                                        value={priceRange.min}
-                                        onChange={(e) => {
-                                            const val = Math.max(0, parseInt(e.target.value) || 0);
-                                            setPriceRange({ ...priceRange, min: e.target.value ? val.toString() : '' });
-                                        }}
-                                        className="w-full px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:border-primary"
-                                    />
-                                    <span className="text-slate-400">to</span>
-                                    <input
-                                        type="number"
-                                        min="0"
-                                        placeholder="Max"
-                                        value={priceRange.max}
-                                        onChange={(e) => {
-                                            const val = Math.max(0, parseInt(e.target.value) || 0);
-                                            setPriceRange({ ...priceRange, max: e.target.value ? val.toString() : '' });
-                                        }}
-                                        className="w-full px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:border-primary"
-                                    />
-                                </div>
-                                {priceRange.min && priceRange.max && Number(priceRange.max) < Number(priceRange.min) && (
-                                    <p className="mt-2 text-[11px] font-bold text-red-500 bg-red-50 dark:bg-red-900/20 px-2 py-1 rounded-md w-fit">Max must be greater than min.</p>
-                                )}
-                            </div>
+            {/* 3. DISCOVERY SIDEBAR */}
+            <DiscoverySidebar 
+                isOpen={isSidebarOpen}
+                onToggle={() => setIsSidebarOpen(!isSidebarOpen)}
+                tasks={filteredTasks}
+                onTaskClick={(task) => {
+                    // Logic to select task on map - usually handled by state if passed to map
+                    // In our current setup, we need a way to communicate back to TaskMapFeed or rely on internal map selection
+                    // For now, we'll just navigate to the task or rely on the fact that TaskMapFeed handles its own selection state
+                    router.push(`/tasks/${task.id}`);
+                }}
+                loading={loading}
+                activeTab={activeTab}
+                onTabChange={setActiveTab}
+                user={user}
+            />
 
-                            {/* Sorting */}
-                            <div>
-                                <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-widest mb-4">Sort By</h3>
-                                <select
-                                    value={sortBy}
-                                    onChange={(e) => setSortBy(e.target.value)}
-                                    className="w-full px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none appearance-none focus:border-primary"
-                                >
-                                    <option value="newest">Latest Added</option>
-                                    <option value="price_desc">Highest Price</option>
-                                    <option value="price_asc">Lowest Price</option>
-                                </select>
-                                <button
-                                    onClick={clearFilters}
-                                    className="mt-4 text-xs font-black text-accent uppercase tracking-wider hover:underline"
-                                >
-                                    Clear all filters
-                                </button>
-                            </div>
+            {/* 4. LOADING STATE OVERLAY */}
+            <AnimatePresence>
+                {loading && (
+                    <motion.div 
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="absolute inset-0 z-[2000] bg-white/50 dark:bg-slate-950/50 backdrop-blur-sm flex items-center justify-center"
+                    >
+                        <div className="flex flex-col items-center gap-4">
+                            <Loader2 className="w-12 h-12 text-primary animate-spin" />
+                            <p className="text-sm font-black text-primary dark:text-accent uppercase tracking-widest">Updating Canvas...</p>
                         </div>
                     </motion.div>
                 )}
             </AnimatePresence>
-
-            {loading ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                    <Skeleton variant="TaskCard" count={6} />
-                </div>
-            ) : viewMode === 'grid' ? (
-                filteredTasks.length > 0 ? (
-                    <div className="pb-20">
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-10">
-                            {filteredTasks.map(task => (
-                                <motion.div
-                                    key={task.id}
-                                    initial={{ opacity: 0, scale: 0.95 }}
-                                    animate={{ opacity: 1, scale: 1 }}
-                                >
-                                    <TaskCard
-                                        task={task}
-                                        onClick={() => router.push(`/tasks/${task.id}`)}
-                                    />
-                                </motion.div>
-                            ))}
-                        </div>
-
-                        {/* Infinite Scroll Sentinel & Loader */}
-                        <div ref={sentinelRef} className="py-10 flex justify-center">
-                            {fetchingMore && (
-                                <div className="flex flex-col items-center gap-2">
-                                    <Loader2 className="w-8 h-8 text-primary animate-spin" />
-                                    <p className="text-sm font-bold text-slate-400">Loading more tasks...</p>
-                                </div>
-                            )}
-                            {!hasMore && allTasks.length > 0 && (
-                                <p className="text-slate-400 font-bold italic">You've reached the end of the marketplace!</p>
-                            )}
-                        </div>
-                    </div>
-                ) : (
-                    <div className="py-24 text-center bg-slate-50 dark:bg-slate-900 rounded-[48px] border-2 border-dashed border-slate-200 dark:border-slate-800 mx-auto max-w-4xl">
-                        <Ghost className="w-20 h-20 mx-auto text-slate-300 mb-6" />
-                        <h2 className="text-3xl font-black text-slate-800 dark:text-white mb-3">
-                            {activeTab === 'my_tasks' ? "You haven't posted any tasks yet" : "No tasks found"}
-                        </h2>
-                        <p className="text-slate-500 font-medium text-lg max-w-md mx-auto">
-                            {activeTab === 'my_tasks'
-                                ? "Need a hand with something? Post a task and get help from your neighbours!"
-                                : "Try adjusting your filters or search terms to find more opportunities in your neighbourhood."}
-                        </p>
-                        {activeTab === 'my_tasks' ? (
-                            <button
-                                onClick={() => router.push('/tasks/create')}
-                                className="mt-8 px-8 py-3 bg-primary text-white font-bold rounded-2xl shadow-lg hover:shadow-xl transition-all"
-                            >
-                                Post Your First Task
-                            </button>
-                        ) : (
-                            <button
-                                onClick={clearFilters}
-                                className="mt-8 px-8 py-3 bg-primary text-white font-bold rounded-2xl shadow-lg hover:shadow-xl transition-all"
-                            >
-                                Clear Filters
-                            </button>
-                        )}
-                    </div>
-                )
-            ) : (
-                <div className="h-[700px] rounded-[48px] overflow-hidden border-2 border-slate-100 dark:border-slate-800 shadow-2xl relative">
-                    <TaskMapFeed 
-                        tasks={filteredTasks}
-                        userLocation={userLocation}
-                        theme="light"
-                    />
-                </div>
-            )}
         </div>
     );
 }

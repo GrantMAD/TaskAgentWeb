@@ -7,21 +7,38 @@ import {
     MapPin, 
     X, 
     ArrowRight, 
-    Wrench, 
-    Truck, 
-    Droplets, 
-    Leaf, 
-    Laptop, 
-    PawPrint, 
     Package, 
     Navigation,
-    ChevronRight 
+    ChevronRight,
+    Heart,
+    Droplets,
+    Laptop,
+    PawPrint,
+    Leaf,
+    Wrench,
+    Truck,
+    Briefcase
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CURRENCY_SYMBOL } from '../utils/constants';
 import Link from 'next/link';
+import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 
 // Helper component to fix Leaflet map centering & resize
+const getTaskIcon = (category, isLarge = false) => {
+    const iconProps = { className: `${isLarge ? 'w-10 h-10' : 'w-6 h-6'} text-primary` };
+    switch (category) {
+        case 'Cleaning': return <Droplets {...iconProps} />;
+        case 'Tech': return <Laptop {...iconProps} />;
+        case 'Pets': return <PawPrint {...iconProps} />;
+        case 'Gardening': return <Leaf {...iconProps} />;
+        case 'Handyman': return <Wrench {...iconProps} />;
+        case 'Delivery': return <Truck {...iconProps} />;
+        default: return <Briefcase {...iconProps} />;
+    }
+};
+
 const MapResizer = ({ center, recenterTrigger }) => {
     const map = useMap();
     const [lastTrigger, setLastTrigger] = useState(0);
@@ -40,6 +57,8 @@ const MapResizer = ({ center, recenterTrigger }) => {
 };
 
 const TaskMapFeed = ({ tasks = [], userLocation, theme = 'light' }) => {
+    const { savedTaskIds, toggleSavedTask, user } = useAuth();
+    const { showToast } = useToast();
     const [selectedTask, setSelectedTask] = useState(null);
     const [forceRecenter, setForceRecenter] = useState(0);
     
@@ -144,20 +163,16 @@ const TaskMapFeed = ({ tasks = [], userLocation, theme = 'light' }) => {
                 )}
 
                 {tasks.map((task) => {
+                    const isSelected = selectedTask?.id === task.id;
                     const icon = L.divIcon({
                         className: 'custom-marker',
                         html: `
-                            <div class="relative flex items-center justify-center group ${selectedTask?.id === task.id ? 'z-[1001]' : 'z-[10]'}">
-                                <div class="absolute inset-0 bg-primary/20 rounded-full blur-sm scale-150 group-hover:block hidden"></div>
-                                <div class="flex items-center justify-center w-10 h-10 rounded-2xl shadow-xl border-2 border-white dark:border-slate-800 transition-all duration-300 ${selectedTask?.id === task.id ? 'bg-accent text-white scale-110' : 'bg-primary text-white hover:bg-slate-800'}">
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                                        ${getIconSVG(task.category)}
-                                    </svg>
-                                </div>
+                            <div class="map-price-bubble ${isSelected ? 'active-bubble' : ''}">
+                                ${CURRENCY_SYMBOL}${task.payment_amount}
                             </div>
                         `,
-                        iconSize: [40, 40],
-                        iconAnchor: [20, 20],
+                        iconSize: [60, 32],
+                        iconAnchor: [30, 16],
                     });
 
                     return (
@@ -177,58 +192,79 @@ const TaskMapFeed = ({ tasks = [], userLocation, theme = 'light' }) => {
             <AnimatePresence>
                 {selectedTask && (
                     <motion.div
-                        initial={{ y: 100, opacity: 0 }}
-                        animate={{ y: 0, opacity: 1 }}
-                        exit={{ y: 100, opacity: 0 }}
-                        className="absolute bottom-10 left-10 right-10 z-[1001] max-w-2xl mx-auto"
+                        initial={{ y: 50, opacity: 0, scale: 0.9 }}
+                        animate={{ y: 0, opacity: 1, scale: 1 }}
+                        exit={{ y: 50, opacity: 0, scale: 0.9 }}
+                        className="absolute bottom-8 left-1/2 -translate-x-1/2 z-[1001] w-full max-w-xl px-4"
                     >
-                        <div className="glass dark:bg-slate-900/80 backdrop-blur-xl rounded-[32px] border border-white/20 dark:border-slate-800 shadow-2xl p-4 flex items-center gap-6 group relative overflow-hidden">
-                            <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16 blur-3xl group-hover:bg-accent/10 transition-colors" />
-                            
-                            <div className="relative w-32 h-32 rounded-2xl overflow-hidden shadow-lg flex-shrink-0">
-                                <img 
-                                    src={selectedTask.image_url || 'https://via.placeholder.com/300?text=No+Photo'} 
-                                    alt={selectedTask.title}
-                                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                                />
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
-                                <div className="absolute bottom-2 left-2 px-2 py-0.5 bg-white/20 backdrop-blur-md rounded-lg border border-white/20">
-                                    <span className="text-[10px] font-black text-white uppercase tracking-widest">{selectedTask.category}</span>
-                                </div>
-                            </div>
-
-                            <div className="flex-grow py-2">
-                                <h3 className="text-xl font-black text-slate-900 dark:text-white mb-1 group-hover:text-primary dark:group-hover:text-accent transition-colors">
-                                    {selectedTask.title}
-                                </h3>
-                                <p className="text-sm text-slate-500 dark:text-slate-400 font-medium line-clamp-1 mb-4">
-                                    {selectedTask.description || "No description provided."}
-                                </p>
-                                
-                                <div className="flex items-center justify-between">
-                                    <div className="flex flex-col">
-                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-tight">Budget</span>
-                                        <span className="text-2xl font-black text-slate-900 dark:text-white">
-                                            {CURRENCY_SYMBOL}{selectedTask.payment_amount}
-                                        </span>
+                        <div className="glass shadow-2xl rounded-[32px] p-2 flex items-center gap-4 group">
+                            <div className="relative w-24 h-24 rounded-2xl overflow-hidden shrink-0 border border-white/20 bg-slate-50 dark:bg-slate-800 flex items-center justify-center">
+                                {selectedTask.image_url ? (
+                                    <img 
+                                        src={selectedTask.image_url} 
+                                        alt={selectedTask.title}
+                                        className="w-full h-full object-cover"
+                                    />
+                                ) : (
+                                    getTaskIcon(selectedTask.category, true)
+                                )}
+                                {selectedTask.is_urgent && (
+                                    <div className="absolute top-2 left-2 px-2 py-0.5 bg-red-500 rounded-md text-[8px] font-black text-white uppercase tracking-widest">
+                                        Urgent
                                     </div>
-
-                                    <Link 
-                                        href={`/tasks/${selectedTask.id}`}
-                                        className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-white hover:bg-slate-900 rounded-2xl font-black transition-all shadow-lg shadow-primary/20 hover:shadow-xl active:scale-95"
-                                    >
-                                        View Task
-                                        <ArrowRight className="w-5 h-5" />
-                                    </Link>
-                                </div>
+                                )}
                             </div>
 
-                            <button 
-                                onClick={() => setSelectedTask(null)}
-                                className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors"
-                            >
-                                <X className="w-5 h-5" />
-                            </button>
+                            <div className="flex-grow min-w-0 pr-4">
+                                <div className="flex justify-between items-start mb-1">
+                                    <h3 className="text-lg font-black text-slate-900 dark:text-white truncate pr-6">
+                                        {selectedTask.title}
+                                    </h3>
+                                    <button 
+                                        onClick={() => setSelectedTask(null)}
+                                        className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-white"
+                                    >
+                                        <X className="w-5 h-5" />
+                                    </button>
+                                </div>
+                                
+                                <p className="text-xs text-slate-500 dark:text-slate-400 font-medium line-clamp-1 mb-3">
+                                    {selectedTask.category} • {selectedTask.address || 'Near you'}
+                                </p>
+
+                                <div className="flex items-center justify-between">
+                                    <span className="text-xl font-black text-primary dark:text-white">
+                                        {CURRENCY_SYMBOL}{selectedTask.payment_amount}
+                                    </span>
+                                    
+                                    <div className="flex items-center gap-2">
+                                        {user && (
+                                            <button 
+                                                onClick={async (e) => {
+                                                    e.stopPropagation();
+                                                    await toggleSavedTask(selectedTask.id);
+                                                    showToast(savedTaskIds?.includes(selectedTask.id) ? 'Removed from saved' : 'Task saved!', 'success');
+                                                }}
+                                                className={`p-2.5 rounded-xl border-2 transition-all ${
+                                                    savedTaskIds?.includes(selectedTask.id)
+                                                    ? 'bg-red-50 border-red-500 text-red-500'
+                                                    : 'border-slate-100 dark:border-slate-800 text-slate-400'
+                                                }`}
+                                            >
+                                                <Heart className={`w-5 h-5 ${savedTaskIds?.includes(selectedTask.id) ? 'fill-current' : ''}`} />
+                                            </button>
+                                        )}
+                                        
+                                        <Link 
+                                            href={`/tasks/${selectedTask.id}`}
+                                            className="px-6 py-2.5 bg-primary text-white font-black rounded-xl text-sm transition-all hover:bg-slate-900 active:scale-95 flex items-center gap-2"
+                                        >
+                                            Details
+                                            <ArrowRight className="w-4 h-4" />
+                                        </Link>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </motion.div>
                 )}

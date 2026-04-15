@@ -53,14 +53,53 @@ body {
 /* Glassmorphism utility */
 .glass {
   background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .dark .glass {
-  background: rgba(15, 23, 42, 0.7);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgba(15, 23, 42, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Map Price Bubbles */
+.map-price-bubble {
+  background: white;
+  color: #1A3D5D;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-weight: 800;
+  font-size: 13px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border: 2px solid white;
+  transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.dark .map-price-bubble {
+  background: #1e293b;
+  color: white;
+  border-color: #334155;
+}
+
+.map-price-bubble:hover {
+  transform: scale(1.1);
+  background: #1A3D5D;
+  color: white;
+  z-index: 1000;
+}
+
+.active-bubble {
+  background: #E68A00 !important;
+  color: white !important;
+  border-color: #E68A00 !important;
+  transform: scale(1.15);
+  box-shadow: 0 0 15px rgba(230, 138, 0, 0.4);
 }
 
 /* Custom Gradients */
@@ -71,3 +110,9 @@ body {
 .bg-accent-gradient {
   background: linear-gradient(135deg, var(--accent) 0%, #ff9f1a 100%);
 }
+
+/* Premium Shadows */
+.shadow-premium {
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+}
+
